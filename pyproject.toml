@@ -48,8 +48,8 @@ data = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = ["--basetemp=.tmp/pytest"]
-cache_dir = ".tmp/pytest-cache"
+addopts = ["--basetemp=.pytest-tmp"]
+cache_dir = ".pytest_cache"
 
 [tool.ruff]
 line-length = 100
