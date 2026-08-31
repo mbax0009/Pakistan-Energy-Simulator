@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pakistan-energy-simulator"
+version = "1.0.0"
+description = "Utility-scale renewable-energy techno-economic simulator for Pakistan"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "numpy>=2,<3",
+  "pandas>=2.2,<4",
+  "pydantic>=2.10,<3",
+  "requests>=2.32,<3",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+wave = ["copernicusmarine>=2.4,<3"]
+dev = [
+  "httpx>=0.28,<1",
+  "pytest>=8,<10",
+  "ruff>=0.11,<1",
+]
+package = ["pyinstaller>=6.14,<7"]
+
+[project.scripts]
+pakistan-energy-simulator = "simulator_api.launcher:main"
+
+[tool.setuptools]
+packages = [
+  "analysis",
+  "core",
+  "data",
+  "data.assumptions",
+  "finance",
+  "physics",
+  "simulator_api",
+]
+
+[tool.setuptools.package-data]
+data = [
+  "reference/turbines/*.csv",
+  "reference/turbines/*.md",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--basetemp=.tmp/pytest"]
+cache_dir = ".tmp/pytest-cache"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F"]

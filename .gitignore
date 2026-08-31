@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+*.egg-info/
+
+# Frontend
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# Local runtime data and credentials
+.env
+.env.*
+!.env.example
+.cache/
+.superdesign/tmp/
+.tmp/
+cache/
+data/cache/
+outputs/
+reports/generated/
+
+# Packaging
+build/
+release/
+.release-work*/
+*.spec.local
+*.zip
+*.exe
+*.sha256
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
