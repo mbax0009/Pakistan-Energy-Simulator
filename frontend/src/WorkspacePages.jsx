@@ -247,6 +247,22 @@ export function SensitivityPage({ results, waveResult, breakEven, rows, runState
   const [maximum, setMaximum] = useState("1400");
   const [points, setPoints] = useState("9");
   const waveChart = useMemo(() => waveCompetitivenessOption(waveResult), [waveResult]);
+  const waveSummary = useMemo(() => {
+    const validPoints = (waveResult?.points || []).filter((point) => Number.isFinite(Number(point.metric_value)));
+    const best = validPoints.reduce((lowest, point) => (
+      !lowest || Number(point.metric_value) < Number(lowest.metric_value) ? point : lowest
+    ), null);
+    const benchmark = Number(waveResult?.benchmark_value);
+    const bestLcoe = Number(best?.metric_value);
+    const multiple = Number.isFinite(benchmark) && benchmark > 0 && Number.isFinite(bestLcoe) ? bestLcoe / benchmark : null;
+    return {
+      best,
+      benchmark,
+      multiple,
+      competitiveCount: validPoints.filter((point) => point.is_competitive === true).length,
+      totalCount: validPoints.length,
+    };
+  }, [waveResult]);
   function changeParameter(value) {
     setParameter(value);
     const ranges = { capex_per_kw: [500, 5500], fixed_opex_per_kw_year: [10, 180], electricity_price_per_mwh: [30, 140], discount_rate: [0.05, 0.18] };
@@ -256,9 +272,83 @@ export function SensitivityPage({ results, waveResult, breakEven, rows, runState
   return (
     <div className="page-workspace">
       <Tabs label="Sensitivity views" value={tab} onChange={setTab} items={[{ id: "one-way", label: "One-way sensitivity" }, { id: "wave-frontier", label: "Wave competitiveness" }, { id: "break-even", label: "Break-even detail" }]} />
-      {tab === "one-way" && <><section className="risk-toolbar sensitivity-toolbar"><Field label="Parameter" unit="shared across all three"><select value={parameter} onChange={(event) => changeParameter(event.target.value)}><option value="capex_per_kw">CAPEX</option><option value="fixed_opex_per_kw_year">Fixed OPEX</option><option value="electricity_price_per_mwh">Electricity price</option><option value="discount_rate">Discount rate</option></select></Field><Field label="Target output" unit="metric"><select value={metric} onChange={(event) => setMetric(event.target.value)}><option value="lcoe">LCOE</option><option value="npv">NPV</option><option value="irr">Project IRR</option><option value="first_year_generation">First-year generation</option><option value="capacity_factor">Capacity factor</option></select></Field><Field label="Minimum" unit="range"><input type="number" step="any" value={minimum} onChange={(event) => setMinimum(event.target.value)} /></Field><Field label="Maximum" unit="range"><input type="number" step="any" value={maximum} onChange={(event) => setMaximum(event.target.value)} /></Field><Field label="Points" unit="2–101"><input type="number" min="2" max="101" value={points} onChange={(event) => setPoints(event.target.value)} /></Field><button className="primary-button" type="button" disabled={runState === "running"} onClick={() => onRunOneWay({ parameter, metric, minimum: Number(minimum), maximum: Number(maximum), points: Number(points) })}><Play size={15} weight="fill" />{runState === "running" ? "Running all three…" : "Run all three"}</button></section><section className="parallel-model-grid chart-model-grid">{SCENARIOS.map((scenario, index) => { const result = results[scenario.id]; const chart = oneWaySensitivityOption(result, parameterLabels[parameter], metricLabels[metric]); return <article className="parallel-model-card chart-page-panel" key={scenario.id} style={{ "--model-color": scenario.color }}><header className="parallel-model-header"><span>0{index + 1}</span><div><h2>{scenario.name}</h2><p>{result ? `${parameterLabels[result.parameter]} → ${metricLabels[result.metric]}` : "Awaiting shared experiment"}</p></div><SlidersHorizontal size={21} /></header>{result ? <><ReactECharts option={chart} className="parallel-chart" notMerge /><p className="chart-footnote">Baseline {number(result.baseline_parameter_value, 3)} → {number(result.baseline_metric_value, 3)}</p></> : <div className="chart-placeholder"><ChartLineUp size={25} /><p>Run the shared range to compare all three models.</p></div>}</article>; })}</section></>}
-      {tab === "wave-frontier" && <><section className="parallel-model-grid benchmark-model-grid">{SCENARIOS.map((scenario, index) => { const row = rows.find((item) => item.scenario_id === scenario.id); return <article className="benchmark-card" key={scenario.id} style={{ "--model-color": scenario.color }}><span>0{index + 1}</span><h3>{scenario.name}</h3><strong>USD {number(row?.lcoe_usd_per_mwh, 2)}/MWh</strong><p>{scenario.request.technology === "wave" ? "Base case to improve" : "P50 comparison benchmark"}</p></article>; })}</section><div className="wave-frontier-layout"><section className="frontier-intro"><p className="eyebrow">FLAGSHIP ACADEMIC VIEW</p><h2>When could wave compete?</h2><p>The surface recalculates wave LCOE across CAPEX and conversion efficiency against the Solar P50 benchmark while keeping Wind visible beside it.</p><button className="primary-button" type="button" disabled={runState === "running"} onClick={() => onRunWave("jhimpir-solar")}><Play size={15} weight="fill" />{runState === "running" ? "Calculating frontier…" : "Calculate wave frontier"}</button></section><section className="editorial-panel chart-page-panel">{waveResult ? <ReactECharts option={waveChart} className="frontier-chart" notMerge /> : <div className="chart-placeholder"><Waves size={29} /><p>Run the two-way model to generate the quantitative competitiveness surface.</p></div>}</section></div></>}
-      {tab === "break-even" && <section className="break-even-panel"><div><p className="eyebrow">ROOT-FINDING RESULT</p><h2>Wave CAPEX threshold at the Solar P50 benchmark</h2><p>Bisection is used only when the target is bracketed by the entered bounds.</p></div>{breakEven ? <dl><div><dt>Status</dt><dd>{breakEven.converged ? "Converged" : "Not bracketed"}</dd></div><div><dt>Threshold</dt><dd>{breakEven.break_even_parameter_value == null ? "—" : `USD ${number(breakEven.break_even_parameter_value, 1)}/kW`}</dd></div><div><dt>Achieved LCOE</dt><dd>{breakEven.achieved_metric_value == null ? "—" : `USD ${number(breakEven.achieved_metric_value, 2)}/MWh`}</dd></div><div><dt>Iterations</dt><dd>{breakEven.iterations}</dd></div></dl> : <p className="inline-caution"><Warning size={15} />Run the Wave competitiveness view to calculate this threshold.</p>}</section>}
+      {tab === "one-way" && <>
+        <section className="risk-toolbar sensitivity-toolbar">
+          <Field label="Parameter" unit="shared across all three"><select value={parameter} onChange={(event) => changeParameter(event.target.value)}><option value="capex_per_kw">CAPEX</option><option value="fixed_opex_per_kw_year">Fixed OPEX</option><option value="electricity_price_per_mwh">Electricity price</option><option value="discount_rate">Discount rate</option></select></Field>
+          <Field label="Target output" unit="metric"><select value={metric} onChange={(event) => setMetric(event.target.value)}><option value="lcoe">LCOE</option><option value="npv">NPV</option><option value="irr">Project IRR</option><option value="first_year_generation">First-year generation</option><option value="capacity_factor">Capacity factor</option></select></Field>
+          <Field label="Minimum" unit="range"><input type="number" step="any" value={minimum} onChange={(event) => setMinimum(event.target.value)} /></Field>
+          <Field label="Maximum" unit="range"><input type="number" step="any" value={maximum} onChange={(event) => setMaximum(event.target.value)} /></Field>
+          <Field label="Points" unit="2–101"><input type="number" min="2" max="101" value={points} onChange={(event) => setPoints(event.target.value)} /></Field>
+          <button className="primary-button" type="button" disabled={runState === "running"} onClick={() => onRunOneWay({ parameter, metric, minimum: Number(minimum), maximum: Number(maximum), points: Number(points) })}><Play size={15} weight="fill" />{runState === "running" ? "Running all three…" : "Run all three"}</button>
+        </section>
+        <section className="parallel-model-grid chart-model-grid">
+          {SCENARIOS.map((scenario, index) => {
+            const result = results[scenario.id];
+            const chart = oneWaySensitivityOption(result, parameterLabels[parameter], metricLabels[metric]);
+            return <article className="parallel-model-card chart-page-panel" key={scenario.id} style={{ "--model-color": scenario.color }}><header className="parallel-model-header"><span>0{index + 1}</span><div><h2>{scenario.name}</h2><p>{result ? `${parameterLabels[result.parameter]} → ${metricLabels[result.metric]}` : "Awaiting shared experiment"}</p></div><SlidersHorizontal size={21} /></header>{result ? <><ReactECharts option={chart} className="parallel-chart" notMerge /><p className="chart-footnote">Baseline {number(result.baseline_parameter_value, 3)} → {number(result.baseline_metric_value, 3)}</p></> : <div className="chart-placeholder"><ChartLineUp size={25} /><p>Run the shared range to compare all three models.</p></div>}</article>;
+          })}
+        </section>
+      </>}
+      {tab === "wave-frontier" && <>
+        <section className="parallel-model-grid benchmark-model-grid">
+          {SCENARIOS.map((scenario, index) => {
+            const row = rows.find((item) => item.scenario_id === scenario.id);
+            return <article className="benchmark-card" key={scenario.id} style={{ "--model-color": scenario.color }}><span>0{index + 1}</span><h3>{scenario.name}</h3><strong>USD {number(row?.lcoe_usd_per_mwh, 2)}/MWh</strong><p>{scenario.request.technology === "wave" ? "Base case to improve" : "P50 comparison benchmark"}</p></article>;
+          })}
+        </section>
+        {waveResult && waveSummary.best && <section className={`wave-screening-result ${waveSummary.competitiveCount ? "is-competitive" : "is-outside-range"}`} aria-live="polite">
+          <div className="wave-result-lead">
+            <p className="eyebrow">SCREENING RESULT</p>
+            <div className="wave-result-title">
+              {waveSummary.competitiveCount ? <CheckCircle size={22} weight="fill" /> : <Warning size={22} weight="fill" />}
+              <h2>{waveSummary.competitiveCount ? "A competitive region appears in the tested range" : "No competitive case in the tested range"}</h2>
+            </div>
+            <p>{waveSummary.competitiveCount
+              ? `${waveSummary.competitiveCount} modeled combinations meet or beat the Solar P50 LCOE benchmark.`
+              : `The best of ${waveSummary.totalCount} modeled combinations remains ${number(waveSummary.multiple, 1)}× the Solar P50 LCOE. The missing frontier is a result, not a chart error.`}</p>
+          </div>
+          <dl className="wave-result-metrics">
+            <div><dt>Best tested LCOE</dt><dd>USD {number(waveSummary.best.metric_value, 1)}/MWh</dd></div>
+            <div><dt>Solar benchmark</dt><dd>USD {number(waveSummary.benchmark, 2)}/MWh</dd></div>
+            <div><dt>Best tested inputs</dt><dd>USD {number(waveSummary.best.x_value)}/kW · {percent(waveSummary.best.y_value, 0)}</dd></div>
+            <div><dt>Competitive cells</dt><dd>{waveSummary.competitiveCount} / {waveSummary.totalCount}</dd></div>
+          </dl>
+        </section>}
+        <div className="wave-frontier-layout">
+          <section className="frontier-intro">
+            <p className="eyebrow">FLAGSHIP ACADEMIC VIEW</p>
+            <h2>When could wave compete?</h2>
+            <p>Test CAPEX and conversion efficiency against the Solar P50 benchmark. Wind, Solar and the current Wave case remain visible as the decision context.</p>
+            <button className="primary-button" type="button" disabled={runState === "running"} onClick={() => onRunWave("jhimpir-solar")}><Play size={15} weight="fill" />{runState === "running" ? "Calculating conditions…" : waveResult ? "Recalculate conditions" : "Calculate conditions"}</button>
+            <p className="frontier-method-note">81 full model evaluations · fixed Wave OPEX and device assumptions · P50 generation basis</p>
+          </section>
+          <section className="editorial-panel chart-page-panel wave-chart-panel">
+            {waveResult ? <>
+              <header className="wave-chart-header"><div><p className="eyebrow">RELATIVE COST SURFACE</p><h3>Wave LCOE as a multiple of Solar</h3><p>Decision bands replace a raw color gradient. Hover any cell for LCOE and exact benchmark multiple.</p></div><div><span>Target</span><strong>USD {number(waveSummary.benchmark, 2)}/MWh</strong></div></header>
+              <ReactECharts option={waveChart} className="frontier-chart" notMerge />
+              <p className="wave-chart-note">The current Wave case is marked on the grid. A dashed boundary appears only where modeled cells meet the Solar benchmark.</p>
+            </> : <div className="chart-placeholder"><Waves size={29} /><p>Run the screening to see the best modeled case, the benchmark gap and the full quantitative surface.</p></div>}
+          </section>
+        </div>
+      </>}
+      {tab === "break-even" && <section className={`break-even-panel ${breakEven && !breakEven.converged ? "is-unbracketed" : ""}`}>
+        <div>
+          <p className="eyebrow">ROOT-FINDING RESULT</p>
+          <h2>{breakEven?.converged ? "Wave CAPEX reaches the Solar benchmark" : "CAPEX alone does not close the modeled gap"}</h2>
+          <p>{breakEven?.converged
+            ? "The threshold is a numerical solution inside the searched interval, with all other Wave assumptions held constant."
+            : "Even the low end of the CAPEX search remains above Solar because fixed OPEX, resource yield and device performance still constrain LCOE."}</p>
+          {breakEven?.warning && <p className="break-even-warning"><Warning size={15} weight="fill" />{breakEven.warning}</p>}
+        </div>
+        {breakEven ? <dl>
+          <div><dt>Status</dt><dd>{breakEven.converged ? "Threshold found" : "Outside search range"}</dd></div>
+          <div><dt>CAPEX threshold</dt><dd>{breakEven.break_even_parameter_value == null ? "No CAPEX-only solution" : `USD ${number(breakEven.break_even_parameter_value, 1)}/kW`}</dd></div>
+          <div><dt>Search interval</dt><dd>USD {number(breakEven.lower_bound, 0)}–{number(breakEven.upper_bound, 0)}/kW</dd></div>
+          <div><dt>Solar target</dt><dd>USD {number(breakEven.target_metric_value, 2)}/MWh</dd></div>
+          <div><dt>Best tested surface</dt><dd>{waveSummary.best ? `USD ${number(waveSummary.best.metric_value, 1)}/MWh` : "—"}</dd></div>
+          <div><dt>Iterations</dt><dd>{breakEven.iterations}</dd></div>
+        </dl> : <p className="inline-caution"><Warning size={15} />Run the Wave competitiveness view to calculate this threshold.</p>}
+      </section>}
     </div>
   );
 }

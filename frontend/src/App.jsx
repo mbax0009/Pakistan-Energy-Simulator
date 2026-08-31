@@ -624,7 +624,7 @@ export function App() {
         apiJson("/api/v1/sensitivity/two-way", {
           analysis,
           x_parameter: "capex_per_kw",
-          x_values: linearValues(1000, 7000, 9),
+          x_values: [250, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000],
           y_parameter: "wave_conversion_efficiency",
           y_values: linearValues(0.15, 0.55, 9),
           metric: "lcoe",
@@ -636,15 +636,20 @@ export function App() {
           parameter: "capex_per_kw",
           metric: "lcoe",
           target_metric_value: benchmark.lcoe_usd_per_mwh,
-          lower_bound: 250,
+          lower_bound: 1,
           upper_bound: 8000,
           generation_basis: "p50",
         }),
       ]);
-      setWaveResult(surface);
+      setWaveResult({
+        ...surface,
+        baseline_x_value: analysis.financial.capex_per_kw,
+        baseline_y_value: analysis.wave.conversion_efficiency,
+        baseline_metric_value: rows.find((row) => row.scenario_id === wave.id)?.lcoe_usd_per_mwh ?? null,
+      });
       setBreakEvenResult(threshold);
       setExperimentRunState("success");
-      setToast("Wave competitiveness surface completed.");
+      setToast("Wave competitiveness screening result is ready.");
     } catch (error) {
       setExperimentRunState("error");
       setToast(`Wave competitiveness failed: ${error.message}`);

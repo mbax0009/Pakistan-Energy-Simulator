@@ -398,31 +398,54 @@ export function waveCompetitivenessOption(result) {
   const points = result?.points || [];
   const xCategories = (result?.x_values || []).map(String);
   const yCategories = (result?.y_values || []).map((value) => String(value));
-  const values = points.map((point) => point.metric_value).filter(Number.isFinite);
-  const minimum = values.length ? Math.min(...values) : 0;
-  const maximum = values.length ? Math.max(...values) : 1;
+  const benchmark = Number(result?.benchmark_value);
+  const hasBenchmark = Number.isFinite(benchmark) && benchmark > 0;
+  const heatmapData = points.map((point) => {
+    const metricValue = Number(point.metric_value);
+    const multiple = hasBenchmark && Number.isFinite(metricValue) ? metricValue / benchmark : null;
+    return [String(point.x_value), String(point.y_value), point.metric_value, point.is_competitive, multiple];
+  });
+  const baselineX = String(result?.baseline_x_value);
+  const baselineY = String(result?.baseline_y_value);
+  const hasBaseline = xCategories.includes(baselineX) && yCategories.includes(baselineY);
   return {
     animationDuration: 450,
     textStyle: baseText(),
+    aria: {
+      enabled: true,
+      description: "Heatmap of wave LCOE relative to the Solar benchmark across CAPEX and conversion efficiency. The current wave case is marked when it falls on the tested grid.",
+    },
     tooltip: {
       position: "top",
       borderColor: rule,
       backgroundColor: "#fffdf9",
       textStyle: { color: ink, fontSize: 11 },
       formatter: (params) => {
-        if (params.seriesType === "line") return `Competitiveness frontier<br/><strong>${Number(params.value[1] * 100).toFixed(1)}% efficiency</strong>`;
-        const [capex, efficiency, lcoe, competitive] = params.value;
-        return `CAPEX USD ${Number(capex).toLocaleString()}/kW<br/>Efficiency ${(Number(efficiency) * 100).toFixed(1)}%<br/><strong>LCOE USD ${Number(lcoe).toLocaleString(undefined, { maximumFractionDigits: 1 })}/MWh</strong><br/>${competitive ? "Competitive at benchmark" : "Above benchmark"}`;
+        if (params.seriesName === "Current wave case") {
+          return `Current wave case<br/>CAPEX USD ${Number(params.value[0]).toLocaleString()}/kW<br/>Efficiency ${(Number(params.value[1]) * 100).toFixed(1)}%<br/><strong>LCOE USD ${Number(result?.baseline_metric_value).toLocaleString(undefined, { maximumFractionDigits: 1 })}/MWh</strong>`;
+        }
+        if (params.seriesType === "line") return `Competitive boundary<br/><strong>${Number(params.value[1] * 100).toFixed(1)}% efficiency at USD ${Number(params.value[0]).toLocaleString()}/kW</strong>`;
+        const [capex, efficiency, lcoe, competitive, multiple] = params.value;
+        const comparison = Number.isFinite(multiple) ? `${Number(multiple).toFixed(multiple >= 10 ? 0 : 1)}× the Solar benchmark` : "Benchmark unavailable";
+        return `CAPEX USD ${Number(capex).toLocaleString()}/kW<br/>Efficiency ${(Number(efficiency) * 100).toFixed(1)}%<br/><strong>LCOE USD ${Number(lcoe).toLocaleString(undefined, { maximumFractionDigits: 1 })}/MWh</strong><br/>${comparison}<br/>${competitive ? "At or below benchmark" : "Above benchmark"}`;
       },
     },
-    grid: { left: 78, right: 95, top: 28, bottom: 48 },
+    legend: {
+      show: hasBaseline || (result?.frontier || []).length > 0,
+      top: 0,
+      left: 8,
+      itemWidth: 14,
+      itemHeight: 7,
+      textStyle: { color: muted, fontSize: 9 },
+    },
+    grid: { left: 78, right: 142, top: 38, bottom: 52 },
     xAxis: {
       type: "category",
       data: xCategories,
       name: "Wave CAPEX (USD/kW)",
       nameLocation: "middle",
       nameGap: 34,
-      axisLabel: { color: muted, fontSize: 9 },
+      axisLabel: { color: muted, fontSize: 9, formatter: (value) => Number(value).toLocaleString() },
       axisLine: { lineStyle: { color: rule } },
       axisTick: { show: false },
     },
@@ -437,26 +460,34 @@ export function waveCompetitivenessOption(result) {
       axisTick: { show: false },
     },
     visualMap: {
-      dimension: 2,
-      min: minimum,
-      max: maximum,
-      calculable: true,
+      type: "piecewise",
+      dimension: 4,
       orient: "vertical",
       right: 0,
-      top: 22,
-      text: ["High LCOE", "Low LCOE"],
+      top: 42,
+      selectedMode: false,
+      itemWidth: 14,
+      itemHeight: 12,
+      itemGap: 6,
       textStyle: { color: muted, fontSize: 9 },
-      inRange: { color: ["#f3d986", "#d4862b", "#9a4724", "#391d10"] },
+      pieces: [
+        { lte: 1, label: "At / below Solar", color: "#f5e8b9" },
+        { gt: 1, lte: 2, label: "1–2× Solar", color: "#e7bc5f" },
+        { gt: 2, lte: 5, label: "2–5× Solar", color: "#cf7c2b" },
+        { gt: 5, lte: 10, label: "5–10× Solar", color: "#8f4023" },
+        { gt: 10, label: ">10× Solar", color: "#391d10" },
+      ],
     },
     series: [
       {
         name: "Wave LCOE",
         type: "heatmap",
-        data: points.map((point) => [String(point.x_value), String(point.y_value), point.metric_value, point.is_competitive]),
+        data: heatmapData,
         itemStyle: { borderWidth: 1, borderColor: "rgba(255,255,255,.45)" },
+        emphasis: { itemStyle: { borderColor: "#241a14", borderWidth: 2 } },
       },
       {
-        name: "Competitiveness frontier",
+        name: "Competitive boundary",
         type: "line",
         data: (result?.frontier || []).map(([x, y]) => [String(x), String(y)]),
         showSymbol: true,
@@ -465,6 +496,26 @@ export function waveCompetitivenessOption(result) {
         itemStyle: { color: "#fffdf9" },
         z: 5,
       },
+      ...(hasBaseline ? [{
+        name: "Current wave case",
+        type: "scatter",
+        data: [[baselineX, baselineY]],
+        symbol: "circle",
+        symbolSize: 18,
+        itemStyle: { color: "#fffdf9", borderColor: "#241a14", borderWidth: 3 },
+        label: {
+          show: true,
+          formatter: "Current",
+          position: "top",
+          color: "#241a14",
+          fontSize: 9,
+          fontWeight: 700,
+          backgroundColor: "rgba(255,253,249,.9)",
+          padding: [3, 5],
+          borderRadius: 2,
+        },
+        z: 8,
+      }] : []),
     ],
   };
 }

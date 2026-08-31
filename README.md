@@ -14,6 +14,14 @@ The simulator is decision support, not a bankability study. It deliberately keep
 source metadata, assumptions, uncertainty, and warnings visible and never collapses
 unlike technologies into a fabricated overall score.
 
+## Download for Windows
+
+- [**Portable ZIP**](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip) — fastest repeated startup after extracting once.
+- [**One-click EXE**](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe) — simplest single-file option; the first launch is slightly slower while Windows unpacks its bundled runtime.
+- [**SHA-256 checksums**](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/SHA256SUMS.txt)
+
+Both packages run on Windows 10/11 x64 without a separate Python or Node installation.
+
 ## Product experience
 
 ![Pakistan Energy Simulator home page](docs/images/home.png)
@@ -25,12 +33,18 @@ unlike technologies into a fabricated overall score.
   workspaces with functional tabs and real model outputs.
 - Solar, Wind, and Wave project names remain distinct from editable site names.
 - Historical annual-generation evidence with empirical P90/P50/P10 statistics.
-- CAPEX × conversion-efficiency wave competitiveness surface and root-found
-  break-even detail.
+- CAPEX × conversion-efficiency Wave screening with a visible conclusion, best-tested
+  case, Solar benchmark gap, decision-banded heatmap, and explicit break-even detail.
 - Evidence-pack export, dated current-cost context, and transparent USD/PKR display
   conversion.
 - Premium tobacco, walnut, ochre, and warm off-white interface designed as an
   engineering laboratory rather than a generic green dashboard.
+
+![Wave competitiveness screening](docs/images/wave-competitiveness.png)
+
+The Wave view does not imply that an empty frontier is a failed chart. It reports when
+no tested case reaches the benchmark, identifies the lowest modeled LCOE and its input
+combination, and explains whether a CAPEX-only threshold exists inside the search range.
 
 ## Scientific and economic scope
 
@@ -53,11 +67,11 @@ from an identified live feed with a dated bundled fallback and an SBP reference 
 ## Windows x64 standalone
 
 The release artifacts are available from the
-[v1.0.0 release](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/tag/v1.0.0):
+[v1.0.1 release](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/tag/v1.0.1):
 
-- [Portable Windows ZIP](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.0/Pakistan-Energy-Simulator-v1.0.0-win-x64.zip)
-- [One-click Windows EXE](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.0/Pakistan-Energy-Simulator-v1.0.0-win-x64.exe)
-- [SHA-256 checksums](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.0/SHA256SUMS.txt)
+- [Portable Windows ZIP](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip)
+- [One-click Windows EXE](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe)
+- [SHA-256 checksums](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/SHA256SUMS.txt)
 
 Both bundle the application, Python runtime, local API, scientific models, reference
 data, and compiled frontend. The portable ZIP starts fastest after extraction; the

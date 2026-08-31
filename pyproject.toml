@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pakistan-energy-simulator"
-version = "1.0.0"
+version = "1.0.1"
 description = "Utility-scale renewable-energy techno-economic simulator for Pakistan"
 readme = "README.md"
 requires-python = ">=3.11"

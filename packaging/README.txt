@@ -1,4 +1,4 @@
-PAKISTAN ENERGY SIMULATOR v1.0.0
+PAKISTAN ENERGY SIMULATOR v1.0.1
 =================================
 
 QUICK START
@@ -40,4 +40,4 @@ bankability study or final project design. Read the visible warnings, methodolog
 sources, and limitations before relying on results.
 
 Project: Pakistan Renewable Energy Techno-Economic Simulator
-Release: v1.0.0, Windows x64
+Release: v1.0.1, Windows x64
