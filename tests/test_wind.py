@@ -17,9 +17,12 @@ from core.resources import (
     WindResourceSeries,
 )
 from physics.wind import (
+    IEA_REFERENCE_3_4MW_POWER_CURVE_ID,
     WindDensityMode,
     calculate_project_wind_power_mw,
+    calculate_turbine_power_mw,
     calculate_turbine_count,
+    load_tabulated_turbine_power_curve,
     simulate_wind,
 )
 
@@ -48,6 +51,22 @@ def wind_config() -> WindConfig:
         availability=0.95,
         wind_shear_exponent=1.0 / 7.0,
         reference_air_density_kg_m3=1.225,
+        power_curve_id=None,
+    )
+
+
+@pytest.fixture
+def reference_curve_config() -> WindConfig:
+    return WindConfig(
+        hub_height_m=100.0,
+        cut_in_speed_ms=3.0,
+        rated_speed_ms=9.8127,
+        cut_out_speed_ms=25.01,
+        turbine_rated_power_mw=3.37,
+        availability=1.0,
+        wind_shear_exponent=1.0 / 7.0,
+        reference_air_density_kg_m3=1.225,
+        power_curve_id=IEA_REFERENCE_3_4MW_POWER_CURVE_ID,
     )
 
 
@@ -77,6 +96,52 @@ def wind_project(
 # ============================================================
 # TURBINE COUNT
 # ============================================================
+
+def test_reference_curve_is_loaded_and_used_at_exact_point(
+    reference_curve_config: WindConfig,
+):
+    curve = load_tabulated_turbine_power_curve(
+        IEA_REFERENCE_3_4MW_POWER_CURVE_ID
+    )
+
+    assert curve.reference_rated_power_mw == pytest.approx(3.37)
+    assert calculate_turbine_power_mw(
+        5.3862,
+        reference_curve_config,
+    ) == pytest.approx(0.5608983052)
+
+
+def test_reference_curve_uses_linear_interpolation(
+    reference_curve_config: WindConfig,
+):
+    midpoint_speed = (5.3862 + 5.7654) / 2
+    midpoint_power = (0.5608983052 + 0.688906312) / 2
+
+    assert calculate_turbine_power_mw(
+        midpoint_speed,
+        reference_curve_config,
+    ) == pytest.approx(midpoint_power)
+
+
+def test_reference_curve_respects_cut_out_boundary(
+    reference_curve_config: WindConfig,
+):
+    assert calculate_turbine_power_mw(25.0, reference_curve_config) == pytest.approx(3.37)
+    assert calculate_turbine_power_mw(25.01, reference_curve_config) == 0.0
+
+
+def test_cubic_curve_remains_available_only_as_fallback(
+    wind_config: WindConfig,
+):
+    expected = 5.0 * (7.0**3 - 3.0**3) / (12.0**3 - 3.0**3) * 0.95
+
+    assert wind_config.power_curve_id is None
+    assert calculate_turbine_power_mw(7.0, wind_config) == pytest.approx(expected)
+
+
+def test_unknown_reference_curve_is_rejected():
+    with pytest.raises(ValueError, match="Unsupported wind power curve"):
+        load_tabulated_turbine_power_curve("unknown")
 
 def test_turbine_count():
     """

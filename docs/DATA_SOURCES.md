@@ -20,15 +20,16 @@ The API response records provider, dataset, requested and resolved coordinates, 
 range, sample count, and time step. Raw provider payloads are stored only in the local
 JSON cache and are excluded from Git.
 
-## Independent validation sources
+## Reference and validation sources
 
 - Solar uses the European Commission Joint Research Centre
   [PVGIS API](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en)
   as an independent implementation cross-check.
-- Wind uses the
+- Wind generation uses the
   [National Laboratory of the Rockies turbine-model archive](https://github.com/NatLabRockies/turbine-models)
-  IEA Reference 3.4 MW power curve. The exact CSV and its notice are vendored for
-  reproducibility.
+  IEA Reference 3.4 MW power curve by default. The exact CSV and its BSD-3-Clause
+  notice are vendored for reproducibility. This reference curve does not replace a
+  certified curve for the final turbine and site.
 - Wave checks the implemented deep-water equation against the common
   `0.49 * Hs^2 * Te` kW/m approximation. This is a formula check, not an independent
   resource-dataset validation.

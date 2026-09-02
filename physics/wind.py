@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import bisect
+import csv
 import math
 
+from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
+from pathlib import Path
 
 from core.models import (
     GenerationResult,
@@ -17,6 +22,97 @@ from core.resources import (
     WindResourcePoint,
     WindResourceSeries,
 )
+
+
+IEA_REFERENCE_3_4MW_POWER_CURVE_ID = (
+    "iea_reference_3_4mw_130"
+)
+
+
+@dataclass(frozen=True)
+class TabulatedTurbinePowerCurve:
+    """Validated tabulated turbine power curve."""
+
+    curve_id: str
+    label: str
+    source_name: str
+    reference_rated_power_mw: float
+    speeds_ms: tuple[float, ...]
+    points: tuple[tuple[float, float], ...]
+
+
+@lru_cache(maxsize=None)
+def load_tabulated_turbine_power_curve(
+    curve_id: str,
+) -> TabulatedTurbinePowerCurve:
+    """Load and validate a supported bundled power curve."""
+
+    if curve_id != IEA_REFERENCE_3_4MW_POWER_CURVE_ID:
+        raise ValueError(
+            f"Unsupported wind power curve: {curve_id}."
+        )
+
+    curve_path = (
+        Path(__file__).resolve().parents[1]
+        / "data"
+        / "reference"
+        / "turbines"
+        / "IEA_Reference_3.4MW_130.csv"
+    )
+
+    try:
+        with curve_path.open(
+            newline="",
+            encoding="utf-8",
+        ) as handle:
+            points = tuple(
+                (
+                    float(row["Wind Speed [m/s]"]),
+                    float(row["Power [kW]"]) / 1000.0,
+                )
+                for row in csv.DictReader(handle)
+            )
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "Unable to load the bundled IEA Reference "
+            "3.4 MW turbine power curve."
+        ) from exc
+
+    if len(points) < 2:
+        raise RuntimeError(
+            "The bundled turbine power curve must contain "
+            "at least two points."
+        )
+
+    previous_speed = -math.inf
+    for speed_ms, power_mw in points:
+        if (
+            not math.isfinite(speed_ms)
+            or not math.isfinite(power_mw)
+            or speed_ms <= previous_speed
+            or power_mw < 0
+        ):
+            raise RuntimeError(
+                "The bundled turbine power curve contains "
+                "invalid or unsorted values."
+            )
+        previous_speed = speed_ms
+
+    return TabulatedTurbinePowerCurve(
+        curve_id=curve_id,
+        label="IEA Reference 3.4 MW, 130 m rotor",
+        source_name=(
+            "National Laboratory of the Rockies "
+            "Wind Turbine Power Curve Archive"
+        ),
+        reference_rated_power_mw=3.37,
+        speeds_ms=tuple(
+            speed_ms
+            for speed_ms, _
+            in points
+        ),
+        points=points,
+    )
 
 
 # ============================================================
@@ -411,8 +507,98 @@ def _calculate_density_factor(
 
 
 # ============================================================
-# SIMPLIFIED TURBINE POWER CURVE
+# TURBINE POWER CURVES
 # ============================================================
+
+def _interpolate_tabulated_power_mw(
+    wind_speed_ms: float,
+    curve: TabulatedTurbinePowerCurve,
+) -> float:
+    """Linearly interpolate one tabulated turbine curve."""
+
+    if wind_speed_ms < curve.speeds_ms[0]:
+        return 0.0
+
+    if wind_speed_ms >= curve.speeds_ms[-1]:
+        return curve.points[-1][1]
+
+    upper_index = bisect.bisect_right(
+        curve.speeds_ms,
+        wind_speed_ms,
+    )
+    lower_speed, lower_power = curve.points[
+        upper_index - 1
+    ]
+    upper_speed, upper_power = curve.points[
+        upper_index
+    ]
+    fraction = (
+        (wind_speed_ms - lower_speed)
+        / (upper_speed - lower_speed)
+    )
+    return lower_power + fraction * (
+        upper_power - lower_power
+    )
+
+
+def _calculate_cubic_power_mw(
+    wind_speed_ms: float,
+    config: WindConfig,
+    density_factor: float,
+) -> float:
+    """Evaluate the legacy cubic fallback curve."""
+
+    if wind_speed_ms < config.rated_speed_ms:
+        numerator = (
+            wind_speed_ms ** 3
+            - config.cut_in_speed_ms ** 3
+        )
+        denominator = (
+            config.rated_speed_ms ** 3
+            - config.cut_in_speed_ms ** 3
+        )
+        power_mw = (
+            config.turbine_rated_power_mw
+            * numerator
+            / denominator
+            * density_factor
+        )
+        return min(
+            config.turbine_rated_power_mw,
+            power_mw,
+        )
+
+    return config.turbine_rated_power_mw
+
+
+def _calculate_tabulated_power_mw(
+    wind_speed_ms: float,
+    config: WindConfig,
+    density_factor: float,
+) -> float:
+    """Evaluate the selected reference curve with interpolation."""
+
+    assert config.power_curve_id is not None
+    curve = load_tabulated_turbine_power_curve(
+        config.power_curve_id
+    )
+    reference_power_mw = (
+        _interpolate_tabulated_power_mw(
+            wind_speed_ms,
+            curve,
+        )
+    )
+    rating_scale = (
+        config.turbine_rated_power_mw
+        / curve.reference_rated_power_mw
+    )
+    return min(
+        config.turbine_rated_power_mw,
+        reference_power_mw
+        * rating_scale
+        * density_factor,
+    )
+
 
 def calculate_turbine_power_mw(
     wind_speed_ms: float,
@@ -422,20 +608,9 @@ def calculate_turbine_power_mw(
     """
     Calculate expected electrical output of one turbine.
 
-    Operating regions
-    -----------------
-
-    1. Below cut-in:
-        P = 0
-
-    2. Cut-in to rated:
-        cubic interpolation
-
-    3. Rated to cut-out:
-        P = rated power
-
-    4. At/above cut-out:
-        P = 0
+    A selected tabulated curve is the primary model. Linear
+    interpolation is used between its reference points. When
+    power_curve_id is None, the legacy cubic curve is used.
 
     Availability is applied to expected output.
     """
@@ -443,7 +618,6 @@ def calculate_turbine_power_mw(
     wind_speed_ms = float(
         wind_speed_ms
     )
-
     density_factor = float(
         density_factor
     )
@@ -451,13 +625,11 @@ def calculate_turbine_power_mw(
     if not math.isfinite(
         wind_speed_ms
     ):
-
         raise ValueError(
             "Wind speed must be finite."
         )
 
     if wind_speed_ms < 0:
-
         raise ValueError(
             "Wind speed cannot be negative."
         )
@@ -468,97 +640,33 @@ def calculate_turbine_power_mw(
         )
         or density_factor <= 0
     ):
-
         raise ValueError(
             "Density factor must be positive "
             "and finite."
         )
 
-    cut_in = (
-        config.cut_in_speed_ms
-    )
-
-    rated = (
-        config.rated_speed_ms
-    )
-
-    cut_out = (
-        config.cut_out_speed_ms
-    )
-
-    rated_power = (
-        config.turbine_rated_power_mw
-    )
-
-    # --------------------------------------------------------
-    # Region 1: below cut-in
-    # --------------------------------------------------------
-
-    if wind_speed_ms < cut_in:
-
+    if (
+        wind_speed_ms < config.cut_in_speed_ms
+        or wind_speed_ms >= config.cut_out_speed_ms
+    ):
         return 0.0
 
-    # --------------------------------------------------------
-    # Region 4: cut-out and above
-    # --------------------------------------------------------
-
-    if wind_speed_ms >= cut_out:
-
-        return 0.0
-
-    # --------------------------------------------------------
-    # Region 2: partial-load region
-    # --------------------------------------------------------
-
-    if wind_speed_ms < rated:
-
-        numerator = (
-            wind_speed_ms ** 3
-            - cut_in ** 3
+    if config.power_curve_id is None:
+        power_mw = _calculate_cubic_power_mw(
+            wind_speed_ms,
+            config,
+            density_factor,
         )
-
-        denominator = (
-            rated ** 3
-            - cut_in ** 3
-        )
-
-        power_fraction = (
-            numerator
-            / denominator
-        )
-
-        power_mw = (
-            rated_power
-            * power_fraction
-            * density_factor
-        )
-
-        # Turbine cannot exceed rated output.
-        power_mw = min(
-            rated_power,
-            power_mw,
-        )
-
-    # --------------------------------------------------------
-    # Region 3: rated-power region
-    # --------------------------------------------------------
-
     else:
-
-        power_mw = rated_power
-
-    # --------------------------------------------------------
-    # Expected availability
-    # --------------------------------------------------------
-
-    expected_power_mw = (
-        power_mw
-        * config.availability
-    )
+        power_mw = _calculate_tabulated_power_mw(
+            wind_speed_ms,
+            config,
+            density_factor,
+        )
 
     return max(
         0.0,
-        expected_power_mw,
+        power_mw * config.availability,
     )
 
 
@@ -903,12 +1011,30 @@ def simulate_wind(
             "power-law wind profile."
         )
 
-    warnings.append(
-        "Wind generation currently uses a "
-        "simplified cubic turbine power curve. "
-        "Final engineering analysis should use "
-        "a manufacturer-specific power curve."
-    )
+    if config.power_curve_id is None:
+        warnings.append(
+            "Wind generation uses the simplified cubic "
+            "fallback because no tabulated turbine power "
+            "curve is selected."
+        )
+        model_name = (
+            "simplified_cubic_wind_power_curve_v1"
+        )
+    else:
+        curve = load_tabulated_turbine_power_curve(
+            config.power_curve_id
+        )
+        warnings.append(
+            "Wind generation uses the bundled "
+            f"{curve.label} tabulated power curve with "
+            "linear interpolation between reference "
+            "points. A site-specific certified turbine "
+            "curve is still required for final design."
+        )
+        model_name = (
+            "tabulated_iea_reference_3_4mw_130_"
+            "linear_v1"
+        )
 
     # --------------------------------------------------------
     # Standard physics output
@@ -943,9 +1069,7 @@ def simulate_wind(
             capacity_factor
         ),
 
-        model_name=(
-            "simplified_cubic_wind_power_curve_v1"
-        ),
+        model_name=model_name,
 
         warnings=tuple(
             warnings

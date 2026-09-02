@@ -54,14 +54,15 @@ Wind speed may be adjusted from measurement height to hub height with the power 
 v_hub = v_ref * (h_hub / h_ref) ^ alpha
 ```
 
-The current turbine model is zero below cut-in, cubic between cut-in and rated speed,
-rated between rated and cut-out speed, and zero at or above cut-out. Availability is
-applied to turbine output, and total project output is capped at installed capacity.
-Optional air-density correction is used only when complete density observations exist.
+The default turbine model uses the bundled NLR/IEA Reference 3.4 MW, 130 m-rotor
+tabulated curve. Electrical output is linearly interpolated between adjacent wind-speed
+points, scaled to the configured turbine rating, set to zero below cut-in and at or above
+cut-out, and capped at rated output. Availability is then applied. The former cubic
+approximation remains available only when `power_curve_id` is explicitly set to `null`.
 
-This curve is suitable for screening. A manufacturer-specific power curve, wake model,
-terrain-flow model, electrical losses, and curtailment model are needed for engineering
-or investment-grade wind analysis.
+Optional air-density correction is used only when complete density observations exist.
+A selected turbine's certified power curve, wake model, terrain-flow model, electrical
+losses, and curtailment model are still needed for engineering or investment-grade work.
 
 ## Wave model
 
@@ -119,6 +120,13 @@ Monte Carlo runs use an explicit seed and declared distributions. Supported inpu
 uniform, triangular, truncated normal, and empirical distributions. Results preserve
 each sample, summarize valid and undefined metric counts, and never replace undefined
 IRR or LCOE values with zeros.
+
+Joint uncertainty draws shared economic inputs once per iteration and applies that draw
+to Solar, Wind, and Wave. Technology-specific costs, performance inputs and empirical
+resource-year sequences are sampled separately. Pairwise probabilities such as
+`P(NPV_solar > NPV_wind)` and `P(LCOE_wave < LCOE_solar)` are counted only from results
+inside the same iteration. Ties are reported separately; undefined metric pairs are
+excluded from that metric's denominator and the valid-pair count is returned.
 
 Comparison reports metric-specific rankings. It deliberately has no opaque composite
 or overall score.

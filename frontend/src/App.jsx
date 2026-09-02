@@ -71,8 +71,8 @@ const cautionItems = [
     body: "Site-specific water depth is unavailable, so the deep-water assumption cannot yet be checked.",
   },
   {
-    title: "Simplified wind curve",
-    body: "The screening model uses a simplified curve; final engineering should use the selected turbine's certified power curve.",
+    title: "Reference wind curve",
+    body: "The default uses the tabulated NLR/IEA 3.4 MW reference curve; final engineering still needs the selected turbine's certified site-specific curve.",
   },
 ];
 
@@ -82,7 +82,7 @@ const pageMeta = {
   economics: { title: "Economics", subtitle: "Unlevered project value, cost and return" },
   compare: { title: "Scenario comparison", subtitle: "P50 · controlled technology comparison" },
   sensitivity: { title: "Sensitivity & break-even", subtitle: "Test drivers and solve competitiveness thresholds" },
-  risk: { title: "Advanced risk", subtitle: "Seeded Monte Carlo and empirical annual-resource uncertainty" },
+  risk: { title: "Advanced risk", subtitle: "Joint economic worlds, paired probabilities and standalone distributions" },
   methodology: { title: "Methodology", subtitle: "Equations, dependency scopes and model boundaries" },
   sources: { title: "Sources & assumptions", subtitle: "Provider metadata, current cost basis and evidence register" },
 };
@@ -402,6 +402,7 @@ export function App() {
   const [waveResult, setWaveResult] = useState(null);
   const [breakEvenResult, setBreakEvenResult] = useState(null);
   const [riskResults, setRiskResults] = useState({});
+  const [jointRiskResult, setJointRiskResult] = useState(null);
   const [statusText, setStatusText] = useState("Validated defaults loaded");
   const [toast, setToast] = useState("");
   const [scenarioFormError, setScenarioFormError] = useState("");
@@ -659,7 +660,21 @@ export function App() {
   async function runRiskExperiment({ sampleCount, seed }) {
     setRiskRunState("running");
     try {
-      const paired = await Promise.all(SCENARIOS.map(async (scenario) => {
+      const boundedSampleCount = Math.max(1, Math.min(20000, Math.round(sampleCount)));
+      const roundedSeed = Math.round(seed);
+      const analysisRequests = SCENARIOS.map((scenario) => (
+        buildAnalysisRequest(scenario, inputs[scenario.id])
+      ));
+      const commonPrice = analysisRequests.reduce(
+        (total, analysis) => total + analysis.financial.electricity_price_per_mwh,
+        0,
+      ) / analysisRequests.length;
+      const commonDiscountRate = analysisRequests.reduce(
+        (total, analysis) => total + analysis.financial.discount_rate,
+        0,
+      ) / analysisRequests.length;
+      const [paired, joint] = await Promise.all([
+        Promise.all(SCENARIOS.map(async (scenario) => {
         const scenarioInput = inputs[scenario.id];
         const capex = Number(scenarioInput.capex);
         const price = Number(scenarioInput.electricityPrice);
@@ -670,17 +685,40 @@ export function App() {
             { name: "electricity_price_per_mwh", distribution: "triangular", units: "USD/MWh", minimum_value: price * 0.8, mode_value: price, maximum_value: price * 1.2 },
           ],
           generation_basis: "p50",
-          sample_count: Math.max(1, Math.min(20000, Math.round(sampleCount))),
-          random_seed: Math.round(seed),
+          sample_count: boundedSampleCount,
+          random_seed: roundedSeed,
           resource_resampling_mode: "annual_empirical",
           irr_hurdle_rate: 0.12,
           lcoe_benchmark_usd_per_mwh: 60,
         });
         return [scenario.id, result];
-      }));
+        })),
+        apiJson("/api/v1/risk/joint", {
+          technologies: SCENARIOS.map((scenario, index) => {
+            const analysis = analysisRequests[index];
+            const capex = analysis.financial.capex_per_kw;
+            const fixedOpex = analysis.financial.fixed_opex_per_kw_year;
+            const variables = [{ name: "capex_per_kw", distribution: "triangular", units: "USD/kW", minimum_value: capex * 0.8, mode_value: capex, maximum_value: capex * 1.25 }];
+            if (fixedOpex > 0) {
+              variables.push({ name: "fixed_opex_per_kw_year", distribution: "triangular", units: "USD/kW/year", minimum_value: fixedOpex * 0.8, mode_value: fixedOpex, maximum_value: fixedOpex * 1.2 });
+            }
+            return { analysis, variables };
+          }),
+          shared_variables: [
+            { name: "electricity_price_per_mwh", distribution: "triangular", units: "USD/MWh", minimum_value: commonPrice * 0.8, mode_value: commonPrice, maximum_value: commonPrice * 1.2 },
+            { name: "discount_rate", distribution: "triangular", units: "fraction", minimum_value: Math.max(0, commonDiscountRate - 0.02), mode_value: commonDiscountRate, maximum_value: Math.min(0.99, commonDiscountRate + 0.02) },
+          ],
+          metrics: ["npv", "lcoe"],
+          generation_basis: "p50",
+          sample_count: boundedSampleCount,
+          random_seed: roundedSeed,
+          resource_resampling_mode: "annual_empirical",
+        }),
+      ]);
       setRiskResults(Object.fromEntries(paired));
+      setJointRiskResult(joint);
       setRiskRunState("success");
-      setToast(`Three risk models completed with ${Math.round(sampleCount)} samples each.`);
+      setToast(`${boundedSampleCount} shared economic worlds completed for Solar, Wind, and Wave.`);
     } catch (error) {
       setRiskRunState("error");
       setToast(`Risk analysis failed: ${error.message}`);
@@ -702,6 +740,7 @@ export function App() {
       wave_competitiveness: waveResult,
       break_even: breakEvenResult,
       advanced_risk: riskResults,
+      joint_uncertainty: jointRiskResult,
       warnings,
       evidence: SCENARIOS.map(({ id, name, evidence, source }) => ({ id, name, evidence, source })),
       cautions: cautionItems,
@@ -792,8 +831,8 @@ export function App() {
         {activeNav === "resource" && <ResourcePage analyses={analysesById} onOpenBuild={() => handleNav("build")} />}
         {activeNav === "economics" && <EconomicsPage analyses={analysesById} currency={currency} fxRate={fxRate} money={money} onOpenBuild={() => handleNav("build")} />}
         {activeNav === "sensitivity" && <SensitivityPage results={oneWayResults} waveResult={waveResult} breakEven={breakEvenResult} rows={rows} runState={experimentRunState} onRunOneWay={runOneWayExperiment} onRunWave={runWaveCompetitiveness} />}
-        {activeNav === "risk" && <RiskPage results={riskResults} runState={riskRunState} onRun={runRiskExperiment} />}
-        {activeNav === "methodology" && <MethodologyPage version="1.0.0" />}
+        {activeNav === "risk" && <RiskPage results={riskResults} jointResult={jointRiskResult} runState={riskRunState} onRun={runRiskExperiment} />}
+        {activeNav === "methodology" && <MethodologyPage version="1.1.0" />}
         {activeNav === "sources" && <SourcesPage assumptions={assumptionCatalog} market={market} onExport={exportEvidence} />}
 
         {activeNav === "compare" && <>

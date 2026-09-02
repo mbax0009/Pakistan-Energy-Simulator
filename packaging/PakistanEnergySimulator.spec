@@ -14,6 +14,7 @@ datas = [
 datas += uvicorn_data
 
 hiddenimports = [
+    "analysis.joint_uncertainty",
     "simulator_api.main",
     "uvicorn.logging",
     "uvicorn.loops.auto",

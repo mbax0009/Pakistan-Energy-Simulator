@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.0.1",
+    [string]$Version = "1.1.0",
     [string]$WorkDirectoryName = ".release-work",
     [switch]$SkipOneFile,
     [switch]$SkipFrontend,
@@ -98,8 +98,9 @@ try {
     New-Item -ItemType Directory -Path (Join-Path $runtimeData.FullName "cache\resources") -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $runtimeData.FullName "tmp") -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $projectRoot "packaging\README.txt") -Destination (Join-Path $stageRoot "README.txt") -Force
+    Copy-Item -LiteralPath (Join-Path $projectRoot "packaging\Verify-Package.ps1") -Destination (Join-Path $stageRoot "Verify-Package.ps1") -Force
     Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD_PARTY_NOTICES.md") -Destination (Join-Path $stageRoot "THIRD_PARTY_NOTICES.md") -Force
-    Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE-DECISION.md") -Destination (Join-Path $stageRoot "LICENSE-DECISION.md") -Force
+    Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination (Join-Path $stageRoot "LICENSE") -Force
 
     $commit = (& git rev-parse --short=12 HEAD 2>$null)
     if (-not $commit) { $commit = "uncommitted-source" }
@@ -109,7 +110,7 @@ try {
         "Platform: Windows x64",
         "Built UTC: $([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))",
         "Source commit: $commit",
-        "Methodology version: 1.0.0",
+        "Methodology version: 1.1.0",
         "Local bind: 127.0.0.1:8765",
         "Telemetry: none",
         "Resource providers: Open-Meteo; optional Copernicus Marine"
@@ -126,6 +127,9 @@ try {
         "$hash  $relative"
     }
     Set-Content -LiteralPath $manifestPath -Value $hashLines -Encoding ASCII
+
+    & (Join-Path $stageRoot "Verify-Package.ps1")
+    if ($LASTEXITCODE -ne 0) { throw "Internal file-manifest verification failed." }
 
     $zipName = "Pakistan-Energy-Simulator-v$Version-win-x64.zip"
     $zipPath = Assert-WithinProject (Join-Path $releaseRoot $zipName)

@@ -13,6 +13,11 @@ from analysis.evaluators import (
     evaluate_scenario_modification,
 )
 from analysis.comparison import compare_projects
+from analysis.joint_uncertainty import (
+    JointTechnologyModel,
+    compare_joint_technologies,
+    run_joint_uncertainty,
+)
 from analysis.monte_carlo_evaluators import create_monte_carlo_evaluator
 from analysis.project_evaluation import ProjectEvaluation, evaluate_standard_resource_cases
 from analysis.risk_analysis import build_project_risk_profile
@@ -72,9 +77,14 @@ from simulator_api.schemas import (
     DistributionKind,
     EvaluationSummary,
     GenerationStatistics,
+    JointIterationOutput,
+    JointTechnologySampleOutput,
+    JointUncertaintyRequest,
+    JointUncertaintyResponse,
     MetricDistributionOutput,
     OneWaySensitivityRequest,
     OneWaySensitivityResponse,
+    PairedTechnologyComparisonOutput,
     ReproducibilitySummary,
     ResourceProvider,
     ResourceSummary,
@@ -649,6 +659,117 @@ def run_risk_analysis(
             for sample in analysis.samples
         ],
         warnings=warnings,
+    )
+
+
+def run_joint_risk_analysis(
+    request: JointUncertaintyRequest,
+    *,
+    provider_overrides: list[Any] | None = None,
+) -> JointUncertaintyResponse:
+    """Run Solar, Wind, and Wave inside the same sampled economic worlds."""
+    models: list[JointTechnologyModel] = []
+    technology_by_name: dict[str, Technology] = {}
+    for index, item in enumerate(request.technologies):
+        provider_override = (
+            None if provider_overrides is None else provider_overrides[index]
+        )
+        context, _ = _prepare_context(
+            item.analysis,
+            request.generation_basis,
+            provider_override,
+        )
+        name = item.analysis.technology.value
+        technology_by_name[name] = item.analysis.technology
+        evaluator_seed = (
+            None if request.random_seed is None else request.random_seed + 1000 + index
+        )
+        models.append(
+            JointTechnologyModel(
+                name=name,
+                evaluator=create_monte_carlo_evaluator(
+                    context,
+                    resource_resampling_mode=request.resource_resampling_mode,
+                    resource_random_seed=evaluator_seed,
+                ),
+                specific_variables=tuple(
+                    UncertainVariable(
+                        name=variable.name.value,
+                        distribution=_distribution(variable),
+                        units=variable.units,
+                    )
+                    for variable in item.variables
+                ),
+            )
+        )
+
+    shared_variables = tuple(
+        UncertainVariable(
+            name=variable.name.value,
+            distribution=_distribution(variable),
+            units=variable.units,
+        )
+        for variable in request.shared_variables
+    )
+    analysis = run_joint_uncertainty(
+        technologies=models,
+        shared_variables=shared_variables,
+        sample_count=request.sample_count,
+        random_seed=request.random_seed,
+    )
+
+    comparisons = []
+    for metric in request.metrics:
+        for left_index, technology_a in enumerate(analysis.technology_names):
+            for technology_b in analysis.technology_names[left_index + 1 :]:
+                comparison = compare_joint_technologies(
+                    analysis=analysis,
+                    technology_a=technology_a,
+                    technology_b=technology_b,
+                    metric=metric,
+                )
+                comparisons.append(
+                    PairedTechnologyComparisonOutput(
+                        technology_a=technology_by_name[comparison.technology_a],
+                        technology_b=technology_by_name[comparison.technology_b],
+                        metric=comparison.metric,
+                        valid_pair_count=comparison.valid_pair_count,
+                        probability_a_better=comparison.probability_a_better,
+                        probability_b_better=comparison.probability_b_better,
+                        probability_tie=comparison.probability_tie,
+                        mean_difference_a_minus_b=comparison.mean_difference_a_minus_b,
+                        median_difference_a_minus_b=comparison.median_difference_a_minus_b,
+                    )
+                )
+
+    return JointUncertaintyResponse(
+        sample_count=analysis.sample_count,
+        random_seed=analysis.random_seed,
+        generation_basis=request.generation_basis,
+        technologies=[technology_by_name[name] for name in analysis.technology_names],
+        comparisons=comparisons,
+        iterations=[
+            JointIterationOutput(
+                iteration=iteration.iteration,
+                sampled_shared_inputs=dict(iteration.shared_inputs),
+                technology_results=[
+                    JointTechnologySampleOutput(
+                        scenario_id=result.scenario_id,
+                        technology=technology_by_name[result.technology_name],
+                        sampled_specific_inputs=dict(result.sampled_specific_inputs),
+                        npv_usd=result.npv_usd,
+                        project_irr=result.irr,
+                        lcoe_usd_per_mwh=result.lcoe_usd_per_mwh,
+                        first_year_generation_mwh=result.first_year_generation_mwh,
+                        lifetime_generation_mwh=result.lifetime_generation_mwh,
+                        capacity_factor=result.capacity_factor,
+                    )
+                    for result in iteration.technology_results
+                ],
+            )
+            for iteration in analysis.iterations
+        ],
+        warnings=list(analysis.warnings),
     )
 
 

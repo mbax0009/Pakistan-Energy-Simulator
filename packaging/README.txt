@@ -1,4 +1,4 @@
-PAKISTAN ENERGY SIMULATOR v1.0.1
+PAKISTAN ENERGY SIMULATOR v1.1.0
 =================================
 
 QUICK START
@@ -12,7 +12,9 @@ WHAT IS INCLUDED
 - The compiled premium desktop web interface.
 - Solar PV, onshore wind, and research-grade wave models.
 - Coordinate entry for any site within the Pakistan analysis bounds.
-- Economics, comparison, sensitivity, break-even, and seeded risk analysis.
+- Economics, comparison, sensitivity, break-even, standalone risk, and paired
+  joint-uncertainty analysis across Solar, Wind, and Wave.
+- Default tabulated NLR/IEA 3.4 MW wind-turbine curve with linear interpolation.
 
 DATA AND INTERNET ACCESS
 - The application runs locally and binds to 127.0.0.1 only by default.
@@ -30,7 +32,12 @@ browser tab does not stop the local process.
 TROUBLESHOOTING
 - If port 8765 is already occupied, close the other local simulator process.
 - Windows may show a SmartScreen warning because this release is not code-signed.
-  Verify the ZIP SHA-256 value in SHA256SUMS.txt before running it.
+  Before extracting, download SHA256SUMS.txt from the same GitHub release and
+  compare it with Get-FileHash on the downloaded ZIP or EXE.
+- After extraction, FILE-MANIFEST.sha256 verifies every file inside the portable
+  package. Right-click Verify-Package.ps1 and choose Run with PowerShell, or run it
+  from a PowerShell prompt. It is intentionally different from the release-level
+  SHA256SUMS.txt.
 - The runtime cache and temporary files live beside the executable under
   runtime-data. They can be removed while the application is closed.
 
@@ -40,4 +47,5 @@ bankability study or final project design. Read the visible warnings, methodolog
 sources, and limitations before relying on results.
 
 Project: Pakistan Renewable Energy Techno-Economic Simulator
-Release: v1.0.1, Windows x64
+License: BSD-3-Clause
+Release: v1.1.0, Windows x64

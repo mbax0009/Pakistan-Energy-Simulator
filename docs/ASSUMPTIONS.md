@@ -41,7 +41,8 @@ conversion uses a separately sourced USD/PKR rate with an exact as-of timestamp;
 not alter the underlying real project economics.
 
 Solar still needs a defensible array orientation and site O&M interpretation. Wind
-needs the selected turbine curve, site losses, and degradation policy. Wave needs a
+defaults to the NLR/IEA 3.4 MW reference curve but still needs the selected turbine's
+certified curve, site losses, and degradation policy. Wave needs a
 specific device or power matrix, cost basis, lifetime, availability, and deployment
 concept.
 

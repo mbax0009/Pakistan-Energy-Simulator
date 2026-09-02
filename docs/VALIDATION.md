@@ -2,7 +2,7 @@
 
 ## Test baseline
 
-The scientific baseline has 95 automated tests covering domain validation, solar, wind,
+The scientific baseline has 106 automated tests covering domain validation, solar, wind,
 wave, lifecycle generation, finance, caching, sensitivity, uncertainty, comparisons,
 and the typed API. The suite is deterministic except for tests that explicitly exercise
 seeded random sampling.
@@ -35,17 +35,26 @@ reference rating; 95% availability; hourly 2015-2024 Open-Meteo ERA5 wind.
 | Measure | Result |
 |---|---:|
 | Mean 100 m wind speed | 6.77 m/s |
-| P90 generation | 320,151 MWh |
-| P50 generation | 341,978 MWh |
-| P10 generation | 379,292 MWh |
-| P50 capacity factor | 39.04% |
-| P50 LCOE | 45.16 USD/MWh |
-| P50 NPV | 47.85 million USD |
-| P50 project IRR | 15.27% |
+| P90 generation | 333,125 MWh |
+| P50 generation | 353,441 MWh |
+| P10 generation | 390,960 MWh |
+| P50 capacity factor | 40.35% |
+| P50 LCOE | 41.74 USD/MWh |
+| P50 NPV | 60.83 million USD |
+| P50 project IRR | 17.07% |
 
-The same hourly resource was run through the NLR IEA Reference 3.4 MW curve. Simulator
-P50 was 3.24% lower, inside the declared 15% screening tolerance. Density correction,
-wake, electrical, icing, curtailment, and terrain-flow losses are not separately modeled.
+The production model and validation script independently load and linearly interpolate
+the same vendored NLR/IEA curve. Their P50 outputs agree within 0.00002%, which checks
+implementation parity rather than independently validating the turbine or resource.
+Density correction, wake, electrical, icing, curtailment, and terrain-flow losses are
+not separately modeled.
+
+## Joint uncertainty
+
+Tests verify fixed-seed reproducibility, one Solar/Wind/Wave result per shared iteration,
+unique shared and technology-specific variables, pairwise valid denominators, and that
+win/tie probabilities sum to one. This validates pairing and arithmetic; it does not
+validate the chosen uncertainty ranges as forecasts.
 
 ## Offshore Karachi wave research case
 

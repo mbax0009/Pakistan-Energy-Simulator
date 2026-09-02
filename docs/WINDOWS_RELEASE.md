@@ -2,9 +2,9 @@
 
 ## Artifact
 
-`release/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip`
+`release/Pakistan-Energy-Simulator-v1.1.0-win-x64.zip`
 
-`release/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe`
+`release/Pakistan-Energy-Simulator-v1.1.0-win-x64.exe`
 
 The ZIP contains one `Pakistan Energy Simulator` folder with the windowed executable,
 bundled Python/runtime libraries, compiled frontend, empty local runtime-data folders,
@@ -48,14 +48,17 @@ Set `PAK_ENERGY_OPEN_BROWSER=0` for automated smoke tests, and set
 After building, launch the staged executable with browser opening disabled and a clean
 port. Confirm:
 
-- `GET /api/v1/health` returns version `1.0.1`;
+- `GET /api/v1/health` returns version `1.1.0`;
 - `/` and the hashed JS/CSS assets return successfully;
 - the home page and every primary workspace render;
 - cached solar, wind, and wave comparisons complete;
 - arbitrary Pakistan coordinate entry changes the resolved resource result;
 - warnings, source metadata, cost basis, and evidence export remain visible;
 - the process writes only inside the extracted `runtime-data` folder; and
-- the SHA-256 values in `release/SHA256SUMS.txt` match the final ZIP and EXE.
+- the SHA-256 values in `release/SHA256SUMS.txt` match the downloaded ZIP and EXE;
+- the internal `FILE-MANIFEST.sha256` validates every extracted package file; and
+- `Verify-Package.ps1` reports that every internal file matches that manifest;
+- the package contains `LICENSE` and `THIRD_PARTY_NOTICES.md`.
 
 ## Distribution notes
 

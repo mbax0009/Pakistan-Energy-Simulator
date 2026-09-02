@@ -1,17 +1,41 @@
 # Third-party notices
 
-Pakistan Energy Simulator bundles third-party Python and frontend dependencies.
-Their respective copyright notices and license terms remain in force.
+Pakistan Energy Simulator is distributed under the BSD 3-Clause License. It uses or
+bundles the following principal third-party components; their own copyright notices
+and license terms remain in force.
 
-Key runtime components include Python, FastAPI, Uvicorn, Pydantic, NumPy, pandas,
-Requests, React, ECharts, Phosphor Icons, and Inter. The release does not claim
-ownership of those projects.
+| Component | Use | License |
+| --- | --- | --- |
+| Python | Bundled runtime | Python Software Foundation License |
+| FastAPI | Local API | MIT |
+| Uvicorn | Local ASGI server | BSD-3-Clause |
+| Pydantic | API validation | MIT |
+| NumPy | Numerical calculations | BSD-3-Clause |
+| pandas | Tabular resource processing | BSD-3-Clause |
+| Requests | HTTP client | Apache-2.0 |
+| React and React DOM | User interface | MIT |
+| Apache ECharts | Charts | Apache-2.0 |
+| echarts-for-react | React chart binding | MIT |
+| Phosphor Icons | Interface icons | MIT |
+| Inter | Interface typeface | OFL-1.1 |
+| Vite and React plugin | Frontend build | MIT |
+| PyInstaller | Windows packaging | GPL-2.0-or-later with the PyInstaller bootloader exception |
 
-The vendored wind reference material is documented separately in
-`data/reference/turbines/NOTICE.md`. Open-Meteo and Copernicus Marine data remain
-subject to their provider terms; data provenance and known limitations are shown in
-the application and documented in `docs/DATA_SOURCES.md`.
+The complete frontend dependency graph and exact resolved versions are recorded in
+`frontend/package-lock.json`; Python dependency constraints are recorded in
+`pyproject.toml`. Those machine-readable inventories are authoritative for a source
+build.
 
-For an auditable dependency inventory, see the source repository lockfile and
-`pyproject.toml`. This notice is informational and does not replace any dependency's
-license text.
+## Turbine reference data
+
+`data/reference/turbines/IEA_Reference_3.4MW_130.csv` is sourced from the National
+Laboratory of the Rockies Wind Turbine Power Curve Archive and is distributed under
+BSD-3-Clause. Its source link and attribution are retained in the adjacent `NOTICE.md`.
+
+## Data services
+
+Open-Meteo and optional Copernicus Marine data remain subject to their providers'
+terms. The application records the provider, dataset, coordinates and retrieval
+context for each run; see `docs/DATA_SOURCES.md`.
+
+This notice is not a substitute for the full license text shipped by each dependency.

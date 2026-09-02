@@ -9,7 +9,8 @@ Pakistan Energy Simulator is a local-first renewable-energy modelling and
 techno-economic analysis platform for utility-scale solar PV, onshore wind and
 research-grade wave-energy projects in Pakistan. Enter coordinates directly, run a
 traceable physical model, and carry P90/P50/P10 resource evidence into LCOE, NPV, IRR,
-payback, comparison, sensitivity, break-even and seeded Monte Carlo risk analysis.
+payback, comparison, sensitivity, break-even, standalone Monte Carlo risk and paired
+joint uncertainty across all three technologies.
 
 **[Download for Windows](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/latest)** ·
 [Review methodology](docs/METHODOLOGY.md) ·
@@ -24,11 +25,13 @@ unlike technologies into a fabricated overall score.
 
 ## Download for Windows
 
-- [**Portable ZIP**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip) — fastest repeated startup after extracting once.
-- [**One-click EXE**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe) — simplest single-file option; the first launch is slightly slower while Windows unpacks its bundled runtime.
-- [**SHA-256 checksums**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/SHA256SUMS.txt)
+- [**Portable ZIP**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/Pakistan-Energy-Simulator-v1.1.0-win-x64.zip) — fastest repeated startup after extracting once.
+- [**One-click EXE**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/Pakistan-Energy-Simulator-v1.1.0-win-x64.exe) — simplest single-file option; the first launch is slightly slower while Windows unpacks its bundled runtime.
+- [**SHA-256 checksums**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/SHA256SUMS.txt)
 
 Both packages run on Windows 10/11 x64 without a separate Python or Node installation.
+The latest verified packages and SHA-256 checksums are published on the
+[GitHub releases page](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/latest).
 
 ## Product experience
 
@@ -59,11 +62,12 @@ combination, and explains whether a CAPEX-only threshold exists inside the searc
 - Hourly solar and wind retrieval from Open-Meteo historical/ERA5-derived data.
 - Copernicus Marine wave support when credentials are supplied, with a documented
   Open-Meteo marine fallback.
-- Explicit solar temperature/loss/degradation, wind hub-height/power-curve, and
-  deep-water wave-flux/capture-width model chains.
+- Explicit solar temperature/loss/degradation, wind hub height with a default tabulated
+  NLR/IEA 3.4 MW power curve (cubic fallback only), and a deep-water
+  wave-flux/capture-width model chain.
 - NPV, unlevered project IRR, LCOE, simple payback, and discounted payback.
-- One-way and two-way sensitivity, break-even root finding, and reproducible Monte
-  Carlo analysis.
+- One-way and two-way sensitivity, break-even root finding, reproducible standalone
+  Monte Carlo analysis, and same-world paired probabilities for NPV and LCOE.
 - Typed FastAPI requests and responses, local JSON caching, and automatic OpenAPI
   documentation.
 
@@ -75,11 +79,11 @@ from an identified live feed with a dated bundled fallback and an SBP reference 
 ## Windows x64 standalone
 
 The release artifacts are available from the
-[v1.0.1 release](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/tag/v1.0.1):
+[v1.1.0 release](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/tag/v1.1.0):
 
-- [Portable Windows ZIP](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip)
-- [One-click Windows EXE](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe)
-- [SHA-256 checksums](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/SHA256SUMS.txt)
+- [Portable Windows ZIP](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/Pakistan-Energy-Simulator-v1.1.0-win-x64.zip)
+- [One-click Windows EXE](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/Pakistan-Energy-Simulator-v1.1.0-win-x64.exe)
+- [SHA-256 checksums](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/SHA256SUMS.txt)
 
 Both bundle the application, Python runtime, local API, scientific models, reference
 data, and compiled frontend. The portable ZIP starts fastest after extraction; the
@@ -96,8 +100,10 @@ Set-Location .\Pakistan-Energy-Simulator
 ```
 
 The script runs tests and linting, builds the frontend, creates the portable ZIP and
-one-click EXE, creates a per-file manifest, writes `release\SHA256SUMS.txt`, and stores
-every build cache and temporary file under D:. See [the release guide](docs/WINDOWS_RELEASE.md).
+one-click EXE, writes release-level hashes to `release\SHA256SUMS.txt`, and creates an
+internal `FILE-MANIFEST.sha256` for every extracted package file. Use the former to
+verify a downloaded ZIP/EXE and the latter after extraction. Every build cache and
+temporary file stays under D:. See [the release guide](docs/WINDOWS_RELEASE.md).
 
 ## Development setup on Windows
 
@@ -160,9 +166,9 @@ docs/           Methods, sources, assumptions, limits, validation, release notes
 - [GreenInvest Pakistan](https://github.com/mbax0009/GreenInvest-Pakistan) — explainable solar, battery and inverter decisions for residential, commercial and industrial users.
 - [Muhammad Bin Asad's portfolio](https://mbax0009.github.io/) — project context, product background and selected engineering work.
 
-## Licensing status
+## License
 
-The project license decision remains with the owner. Until a license is selected, the
-original source is treated as all rights reserved. Third-party material retains its
-own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the vendored wind
-reference [notice](data/reference/turbines/NOTICE.md).
+Pakistan Energy Simulator is released under the [BSD 3-Clause License](LICENSE).
+Third-party material retains its own terms; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the vendored wind-reference
+[notice](data/reference/turbines/NOTICE.md).

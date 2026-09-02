@@ -186,8 +186,12 @@ class WindConfig:
     of wind speed from the resource measurement height
     to turbine hub height.
 
+    power_curve_id selects a bundled tabulated turbine curve.
+    When it is None, the simplified cubic curve is used as a
+    fallback.
+
     reference_air_density_kg_m3 is the air density at which
-    the simplified turbine power curve is assumed to apply.
+    the selected turbine power curve is assumed to apply.
     """
 
     hub_height_m: float
@@ -203,6 +207,10 @@ class WindConfig:
     wind_shear_exponent: float = 1.0 / 7.0
 
     reference_air_density_kg_m3: float = 1.225
+
+    power_curve_id: str | None = (
+        "iea_reference_3_4mw_130"
+    )
 
     def __post_init__(self):
 
@@ -242,6 +250,14 @@ class WindConfig:
             raise ValueError(
                 "Reference air density must "
                 "be greater than zero."
+            )
+
+        if (
+            self.power_curve_id is not None
+            and not self.power_curve_id.strip()
+        ):
+            raise ValueError(
+                "Power curve ID cannot be empty."
             )
 
 # ============================================================

@@ -24,6 +24,8 @@ from simulator_api.schemas import (
     ComparisonRequest,
     ComparisonResponse,
     HealthResponse,
+    JointUncertaintyRequest,
+    JointUncertaintyResponse,
     MarketContextResponse,
     OneWaySensitivityRequest,
     OneWaySensitivityResponse,
@@ -37,6 +39,7 @@ from simulator_api.service import (
     run_analysis,
     run_break_even_analysis,
     run_comparison,
+    run_joint_risk_analysis,
     run_one_way_analysis,
     run_risk_analysis,
     run_two_way_analysis,
@@ -161,6 +164,14 @@ def two_way_sensitivity(request: TwoWaySensitivityRequest):
 def risk(request: RiskAnalysisRequest):
     try:
         return run_risk_analysis(request)
+    except Exception as exc:
+        raise _analysis_error(exc) from exc
+
+
+@app.post("/api/v1/risk/joint", response_model=JointUncertaintyResponse)
+def joint_risk(request: JointUncertaintyRequest):
+    try:
+        return run_joint_risk_analysis(request)
     except Exception as exc:
         raise _analysis_error(exc) from exc
 

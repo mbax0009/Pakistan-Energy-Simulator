@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from analysis.generation_scenarios import GenerationBasis
+from analysis.joint_uncertainty import JointComparisonMetric
 from analysis.monte_carlo_evaluators import ResourceResamplingMode
 from analysis.scenario_builders import ScenarioParameter
 from analysis.sensitivity import SensitivityMetric
@@ -46,12 +48,15 @@ class SolarConfigInput(BaseModel):
 class WindConfigInput(BaseModel):
     hub_height_m: float = Field(default=100, gt=0)
     cut_in_speed_ms: float = Field(default=3, ge=0)
-    rated_speed_ms: float = Field(default=12, gt=0)
-    cut_out_speed_ms: float = Field(default=25, gt=0)
-    turbine_rated_power_mw: float = Field(default=3.2, gt=0)
+    rated_speed_ms: float = Field(default=9.8127, gt=0)
+    cut_out_speed_ms: float = Field(default=25.01, gt=0)
+    turbine_rated_power_mw: float = Field(default=3.37, gt=0)
     availability: float = Field(default=0.95, gt=0, le=1)
     wind_shear_exponent: float = Field(default=1 / 7, ge=0)
     reference_air_density_kg_m3: float = Field(default=1.225, gt=0)
+    power_curve_id: Literal["iea_reference_3_4mw_130"] | None = (
+        "iea_reference_3_4mw_130"
+    )
 
     @model_validator(mode="after")
     def validate_speed_order(self):
@@ -401,6 +406,99 @@ class RiskAnalysisResponse(BaseModel):
     probability_irr_above_hurdle: float | None
     risk_profile: dict
     samples: list[RiskSampleOutput]
+    warnings: list[str]
+
+
+class JointTechnologyRiskInput(BaseModel):
+    analysis: AnalysisRequest
+    variables: list[UncertainVariableInput] = Field(default_factory=list, max_length=12)
+
+
+class JointUncertaintyRequest(BaseModel):
+    technologies: list[JointTechnologyRiskInput] = Field(min_length=3, max_length=3)
+    shared_variables: list[UncertainVariableInput] = Field(min_length=1, max_length=8)
+    metrics: list[JointComparisonMetric] = Field(
+        default_factory=lambda: [JointComparisonMetric.NPV, JointComparisonMetric.LCOE],
+        min_length=1,
+        max_length=6,
+    )
+    generation_basis: GenerationBasis = GenerationBasis.P50
+    sample_count: int = Field(default=1000, ge=1, le=20_000)
+    random_seed: int | None = 42
+    resource_resampling_mode: ResourceResamplingMode = (
+        ResourceResamplingMode.ANNUAL_EMPIRICAL
+    )
+
+    @model_validator(mode="after")
+    def validate_joint_design(self):
+        analyses = [item.analysis for item in self.technologies]
+        technologies = [analysis.technology for analysis in analyses]
+        required = {Technology.SOLAR, Technology.WIND, Technology.WAVE}
+        if set(technologies) != required:
+            raise ValueError(
+                "Joint uncertainty requires exactly one Solar, one Wind, and one Wave model."
+            )
+        scenario_ids = [analysis.scenario_id for analysis in analyses]
+        if len(set(scenario_ids)) != len(scenario_ids):
+            raise ValueError("Joint uncertainty scenario IDs must be unique.")
+        shared_names = [variable.name for variable in self.shared_variables]
+        if len(set(shared_names)) != len(shared_names):
+            raise ValueError("Shared uncertain-variable names must be unique.")
+        shared_name_set = set(shared_names)
+        for item in self.technologies:
+            specific_names = [variable.name for variable in item.variables]
+            if len(set(specific_names)) != len(specific_names):
+                raise ValueError(
+                    f"{item.analysis.technology.value} specific-variable names must be unique."
+                )
+            overlap = shared_name_set & set(specific_names)
+            if overlap:
+                raise ValueError(
+                    "Shared and technology-specific variables cannot overlap: "
+                    + ", ".join(sorted(variable.value for variable in overlap))
+                )
+        if len(set(self.metrics)) != len(self.metrics):
+            raise ValueError("Joint comparison metrics must be unique.")
+        return self
+
+
+class JointTechnologySampleOutput(BaseModel):
+    scenario_id: str
+    technology: Technology
+    sampled_specific_inputs: dict[str, float]
+    npv_usd: float
+    project_irr: float | None
+    lcoe_usd_per_mwh: float | None
+    first_year_generation_mwh: float
+    lifetime_generation_mwh: float
+    capacity_factor: float
+
+
+class JointIterationOutput(BaseModel):
+    iteration: int
+    sampled_shared_inputs: dict[str, float]
+    technology_results: list[JointTechnologySampleOutput]
+
+
+class PairedTechnologyComparisonOutput(BaseModel):
+    technology_a: Technology
+    technology_b: Technology
+    metric: JointComparisonMetric
+    valid_pair_count: int
+    probability_a_better: float
+    probability_b_better: float
+    probability_tie: float
+    mean_difference_a_minus_b: float
+    median_difference_a_minus_b: float
+
+
+class JointUncertaintyResponse(BaseModel):
+    sample_count: int
+    random_seed: int | None
+    generation_basis: GenerationBasis
+    technologies: list[Technology]
+    comparisons: list[PairedTechnologyComparisonOutput]
+    iterations: list[JointIterationOutput]
     warnings: list[str]
 
 

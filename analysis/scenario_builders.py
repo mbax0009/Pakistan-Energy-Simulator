@@ -517,11 +517,24 @@ def _replace_wind_parameter(
         )
     )
 
+    changes: dict[str, float | None] = {
+        field_name: value
+    }
+
+    # Cut-in, rated, and cut-out speeds describe the
+    # parametric cubic curve. Varying one of them therefore
+    # selects that fallback instead of silently pretending the
+    # fixed tabulated reference curve changed shape.
+    if field_name in {
+        "cut_in_speed_ms",
+        "rated_speed_ms",
+        "cut_out_speed_ms",
+    }:
+        changes["power_curve_id"] = None
+
     new_config = replace(
         config,
-        **{
-            field_name: value
-        },
+        **changes,
     )
 
     return replace(

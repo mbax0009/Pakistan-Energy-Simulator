@@ -31,12 +31,24 @@ independent engineer, or certified energy-yield assessment.
 
 ## Wind limitations
 
-- The built-in cubic power curve is a screening approximation.
+- The default NLR/IEA 3.4 MW curve is a reference turbine, not a site-selected certified
+  machine curve. The cubic curve remains an explicit fallback only.
 - No wake, layout, terrain, turbulence, extreme-wind, electrical-loss, icing, or detailed
   availability model is included.
 - Air-density correction is omitted when complete density data are unavailable.
 - Fractional turbine counts are allowed to scale the reference machine to project size;
   this is analytically convenient but not a physical layout.
+
+## Joint-uncertainty limitations
+
+- Paired probabilities are conditional on the declared distributions and model inputs;
+  they are not frequencies observed in the Pakistan project market.
+- Tariff and discount rate share a draw across technologies. Technology CAPEX, OPEX,
+  performance and annual resource sequences are sampled independently by default.
+- Cross-resource weather dependence, serial correlation, climate trend, construction
+  correlation and supply-chain correlation are not modeled unless added explicitly.
+- Undefined values are omitted pairwise, so the displayed valid-pair denominator must
+  accompany IRR or LCOE probabilities.
 
 ## Wave limitations
 

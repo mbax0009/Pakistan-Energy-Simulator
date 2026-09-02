@@ -192,7 +192,7 @@ def main() -> int:
             "simple_payback_years": p50.simple_payback_years,
             "discounted_payback_years": p50.discounted_payback_years,
         },
-        "independent_validation": {
+        "reference_curve_parity": {
             "source": "NLR Wind Turbine Power Curve Archive",
             "reference_curve": "IEA Reference 3.4 MW, 130 m rotor",
             "reference_p50_generation_mwh": reference_p50,
@@ -203,7 +203,8 @@ def main() -> int:
         "warnings": list(assessment.warnings),
         "method_notes": [
             "Both models use identical hourly Open-Meteo ERA5 100 m wind speeds.",
-            "The validation curve is linearly interpolated between NLR archive points.",
+            "The reference curve is linearly interpolated between NLR archive points.",
+            "This is an implementation-parity check, not independent turbine validation.",
             "Both models apply the same 95% availability and equivalent fractional turbine count.",
             (
                 "Wake, electrical, icing, curtailment, and terrain-flow losses "

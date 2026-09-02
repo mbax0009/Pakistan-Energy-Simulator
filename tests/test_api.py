@@ -1,17 +1,28 @@
 from __future__ import annotations
 
+import math
+
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
 from fastapi.testclient import TestClient
 
-from core.resources import ResourceMetadata, SolarResourcePoint, SolarResourceSeries
+from core.resources import (
+    ResourceMetadata,
+    SolarResourcePoint,
+    SolarResourceSeries,
+    WaveResourcePoint,
+    WaveResourceSeries,
+    WindResourcePoint,
+    WindResourceSeries,
+)
 from simulator_api.main import app
 from simulator_api.schemas import (
     AnalysisRequest,
     BreakEvenRequest,
     ComparisonRequest,
+    JointUncertaintyRequest,
     OneWaySensitivityRequest,
     RiskAnalysisRequest,
     TwoWaySensitivityRequest,
@@ -20,6 +31,7 @@ from simulator_api.service import (
     run_analysis,
     run_break_even_analysis,
     run_comparison,
+    run_joint_risk_analysis,
     run_one_way_analysis,
     run_risk_analysis,
     run_two_way_analysis,
@@ -50,6 +62,55 @@ class _SyntheticSolarProvider:
                 provider_timezone="UTC",
             ),
             points=points,
+        )
+
+
+class _SyntheticWindProvider:
+    def fetch(self, request):
+        start = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        return WindResourceSeries(
+            location=request.location,
+            metadata=ResourceMetadata(
+                source_name="Synthetic test provider",
+                dataset_name="Deterministic hourly fixture",
+                retrieved_at=datetime.now(timezone.utc),
+                resolved_latitude=request.location.latitude,
+                resolved_longitude=request.location.longitude,
+                provider_timezone="UTC",
+            ),
+            measurement_height_m=request.measurement_height_m,
+            points=tuple(
+                WindResourcePoint(
+                    timestamp=start + timedelta(hours=index),
+                    wind_speed_ms=speed,
+                )
+                for index, speed in enumerate((4.0, 6.0, 8.0, 10.0))
+            ),
+        )
+
+
+class _SyntheticWaveProvider:
+    def fetch(self, request):
+        start = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        return WaveResourceSeries(
+            location=request.location,
+            metadata=ResourceMetadata(
+                source_name="Synthetic test provider",
+                dataset_name="Deterministic hourly fixture",
+                retrieved_at=datetime.now(timezone.utc),
+                resolved_latitude=request.location.latitude,
+                resolved_longitude=request.location.longitude,
+                provider_timezone="UTC",
+            ),
+            points=tuple(
+                WaveResourcePoint(
+                    timestamp=start + timedelta(hours=index),
+                    significant_wave_height_m=height,
+                    energy_period_s=6.0,
+                )
+                for index, height in enumerate((0.8, 1.0, 1.2, 1.4))
+            ),
+            water_depth_m=50.0,
         )
 
 
@@ -86,6 +147,35 @@ def _request() -> AnalysisRequest:
     )
 
 
+def _three_requests() -> list[AnalysisRequest]:
+    solar = _request()
+    shared = solar.model_dump(mode="json")
+    wind = AnalysisRequest.model_validate(
+        {
+            **shared,
+            "scenario_id": "API_WIND_TEST",
+            "technology": "wind",
+            "solar": None,
+            "wind": {},
+        }
+    )
+    wave = AnalysisRequest.model_validate(
+        {
+            **shared,
+            "scenario_id": "API_WAVE_TEST",
+            "technology": "wave",
+            "location": {
+                "name": "Synthetic offshore site",
+                "latitude": 24.5,
+                "longitude": 66.5,
+            },
+            "solar": None,
+            "wave": {},
+        }
+    )
+    return [solar, wind, wave]
+
+
 def test_health_endpoint_exposes_versions():
     response = TestClient(app).get("/api/v1/health")
 
@@ -93,6 +183,7 @@ def test_health_endpoint_exposes_versions():
     assert response.json()["status"] == "ok"
     assert response.json()["software_version"]
     assert response.json()["methodology_version"]
+    assert "/api/v1/risk/joint" in TestClient(app).get("/openapi.json").json()["paths"]
 
 
 def test_analysis_service_returns_typed_reproducible_result():
@@ -168,6 +259,114 @@ def test_risk_analysis_is_reproducible_with_fixed_seed():
     assert first.samples == second.samples
     assert first.sample_count == 20
     assert 0 <= first.probability_npv_positive <= 1
+
+
+def test_joint_risk_uses_aligned_worlds_and_is_reproducible():
+    analyses = _three_requests()
+    request = JointUncertaintyRequest.model_validate(
+        {
+            "technologies": [
+                {
+                    "analysis": analysis.model_dump(mode="json"),
+                    "variables": [
+                        {
+                            "name": "capex_per_kw",
+                            "distribution": "uniform",
+                            "minimum_value": 600.0,
+                            "maximum_value": 800.0,
+                        }
+                    ],
+                }
+                for analysis in analyses
+            ],
+            "shared_variables": [
+                {
+                    "name": "electricity_price_per_mwh",
+                    "distribution": "uniform",
+                    "minimum_value": 50.0,
+                    "maximum_value": 80.0,
+                }
+            ],
+            "metrics": ["npv", "lcoe"],
+            "sample_count": 12,
+            "random_seed": 19,
+            "resource_resampling_mode": "none",
+        }
+    )
+    providers = [
+        _SyntheticSolarProvider(),
+        _SyntheticWindProvider(),
+        _SyntheticWaveProvider(),
+    ]
+
+    first = run_joint_risk_analysis(request, provider_overrides=providers)
+    second = run_joint_risk_analysis(
+        request,
+        provider_overrides=[
+            _SyntheticSolarProvider(),
+            _SyntheticWindProvider(),
+            _SyntheticWaveProvider(),
+        ],
+    )
+
+    assert first == second
+    assert first.sample_count == 12
+    assert len(first.iterations) == 12
+    assert all(len(world.technology_results) == 3 for world in first.iterations)
+    assert len(first.comparisons) == 6
+    assert all(comparison.valid_pair_count == 12 for comparison in first.comparisons)
+    assert all(
+        comparison.probability_a_better
+        + comparison.probability_b_better
+        + comparison.probability_tie
+        == pytest.approx(1.0)
+        for comparison in first.comparisons
+    )
+    solar_wind_npv = next(
+        comparison
+        for comparison in first.comparisons
+        if comparison.metric == "npv"
+        and {comparison.technology_a.value, comparison.technology_b.value}
+        == {"solar", "wind"}
+    )
+    direct_wins = 0
+    for world in first.iterations:
+        values = {
+            result.technology.value: result.npv_usd
+            for result in world.technology_results
+        }
+        if values["solar"] > values["wind"] and not math.isclose(
+            values["solar"], values["wind"], rel_tol=0, abs_tol=1e-9
+        ):
+            direct_wins += 1
+    expected_solar_probability = direct_wins / first.sample_count
+    reported_solar_probability = (
+        solar_wind_npv.probability_a_better
+        if solar_wind_npv.technology_a.value == "solar"
+        else solar_wind_npv.probability_b_better
+    )
+    assert reported_solar_probability == pytest.approx(expected_solar_probability)
+
+
+def test_joint_risk_schema_requires_one_of_each_technology():
+    solar = _request().model_dump(mode="json")
+    with pytest.raises(ValueError, match="exactly one Solar"):
+        JointUncertaintyRequest.model_validate(
+            {
+                "technologies": [
+                    {"analysis": {**solar, "scenario_id": f"SOLAR_{index}"}}
+                    for index in range(3)
+                ],
+                "shared_variables": [
+                    {
+                        "name": "electricity_price_per_mwh",
+                        "distribution": "uniform",
+                        "minimum_value": 50.0,
+                        "maximum_value": 80.0,
+                    }
+                ],
+            }
+        )
 
 
 def test_comparison_ranks_projects_without_overall_score():
