@@ -155,6 +155,11 @@ docs/           Methods, sources, assumptions, limits, validation, release notes
 - [Security policy](SECURITY.md)
 - [How to cite the simulator](CITATION.cff)
 
+## Related work
+
+- [GreenInvest Pakistan](https://github.com/mbax0009/GreenInvest-Pakistan) — explainable solar, battery and inverter decisions for residential, commercial and industrial users.
+- [Muhammad Bin Asad's portfolio](https://mbax0009.github.io/) — project context, product background and selected engineering work.
+
 ## Licensing status
 
 The project license decision remains with the owner. Until a license is selected, the
