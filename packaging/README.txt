@@ -1,4 +1,4 @@
-PAKISTAN ENERGY SIMULATOR v1.1.0
+PAKISTAN ENERGY SIMULATOR v1.1.1
 =================================
 
 QUICK START
@@ -48,4 +48,4 @@ sources, and limitations before relying on results.
 
 Project: Pakistan Renewable Energy Techno-Economic Simulator
 License: BSD-3-Clause
-Release: v1.1.0, Windows x64
+Release: v1.1.1, Windows x64

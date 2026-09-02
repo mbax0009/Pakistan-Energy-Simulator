@@ -2,9 +2,9 @@
 
 ## Artifact
 
-`release/Pakistan-Energy-Simulator-v1.1.0-win-x64.zip`
+`release/Pakistan-Energy-Simulator-v1.1.1-win-x64.zip`
 
-`release/Pakistan-Energy-Simulator-v1.1.0-win-x64.exe`
+`release/Pakistan-Energy-Simulator-v1.1.1-win-x64.exe`
 
 The ZIP contains one `Pakistan Energy Simulator` folder with the windowed executable,
 bundled Python/runtime libraries, compiled frontend, empty local runtime-data folders,
@@ -48,7 +48,7 @@ Set `PAK_ENERGY_OPEN_BROWSER=0` for automated smoke tests, and set
 After building, launch the staged executable with browser opening disabled and a clean
 port. Confirm:
 
-- `GET /api/v1/health` returns version `1.1.0`;
+- `GET /api/v1/health` returns version `1.1.1`;
 - `/` and the hashed JS/CSS assets return successfully;
 - the home page and every primary workspace render;
 - cached solar, wind, and wave comparisons complete;

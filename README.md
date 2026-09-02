@@ -25,9 +25,9 @@ unlike technologies into a fabricated overall score.
 
 ## Download for Windows
 
-- [**Portable ZIP**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/Pakistan-Energy-Simulator-v1.1.0-win-x64.zip) — fastest repeated startup after extracting once.
-- [**One-click EXE**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/Pakistan-Energy-Simulator-v1.1.0-win-x64.exe) — simplest single-file option; the first launch is slightly slower while Windows unpacks its bundled runtime.
-- [**SHA-256 checksums**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/SHA256SUMS.txt)
+- [**Portable ZIP**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.1/Pakistan-Energy-Simulator-v1.1.1-win-x64.zip) — fastest repeated startup after extracting once.
+- [**One-click EXE**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.1/Pakistan-Energy-Simulator-v1.1.1-win-x64.exe) — simplest single-file option; the first launch is slightly slower while Windows unpacks its bundled runtime.
+- [**SHA-256 checksums**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.1/SHA256SUMS.txt)
 
 Both packages run on Windows 10/11 x64 without a separate Python or Node installation.
 The latest verified packages and SHA-256 checksums are published on the
@@ -79,11 +79,11 @@ from an identified live feed with a dated bundled fallback and an SBP reference 
 ## Windows x64 standalone
 
 The release artifacts are available from the
-[v1.1.0 release](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/tag/v1.1.0):
+[v1.1.1 release](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/tag/v1.1.1):
 
-- [Portable Windows ZIP](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/Pakistan-Energy-Simulator-v1.1.0-win-x64.zip)
-- [One-click Windows EXE](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/Pakistan-Energy-Simulator-v1.1.0-win-x64.exe)
-- [SHA-256 checksums](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.0/SHA256SUMS.txt)
+- [Portable Windows ZIP](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.1/Pakistan-Energy-Simulator-v1.1.1-win-x64.zip)
+- [One-click Windows EXE](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.1/Pakistan-Energy-Simulator-v1.1.1-win-x64.exe)
+- [SHA-256 checksums](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.1.1/SHA256SUMS.txt)
 
 Both bundle the application, Python runtime, local API, scientific models, reference
 data, and compiled frontend. The portable ZIP starts fastest after extraction; the
