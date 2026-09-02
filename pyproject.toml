@@ -8,6 +8,24 @@ version = "1.0.1"
 description = "Utility-scale renewable-energy techno-economic simulator for Pakistan"
 readme = "README.md"
 requires-python = ">=3.11"
+authors = [{ name = "Muhammad Bin Asad" }]
+keywords = [
+  "pakistan",
+  "renewable-energy",
+  "solar-energy",
+  "wind-energy",
+  "wave-energy",
+  "techno-economic-analysis",
+  "lcoe",
+  "monte-carlo",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering",
+]
 dependencies = [
   "fastapi>=0.115,<1",
   "numpy>=2,<3",
@@ -16,6 +34,13 @@ dependencies = [
   "requests>=2.32,<3",
   "uvicorn[standard]>=0.34,<1",
 ]
+
+[project.urls]
+Homepage = "https://mbax0009.github.io/#work"
+Repository = "https://github.com/mbax0009/Pakistan-Energy-Simulator"
+Issues = "https://github.com/mbax0009/Pakistan-Energy-Simulator/issues"
+Releases = "https://github.com/mbax0009/Pakistan-Energy-Simulator/releases"
+Documentation = "https://github.com/mbax0009/Pakistan-Energy-Simulator/tree/main/docs"
 
 [project.optional-dependencies]
 wave = ["copernicusmarine>=2.4,<3"]

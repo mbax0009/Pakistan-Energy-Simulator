@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "Please cite Pakistan Energy Simulator when it supports a project evaluation or research workflow."
+title: "Pakistan Energy Simulator"
+type: software
+version: 1.0.1
+date-released: 2026-08-31
+authors:
+  - family-names: "Asad"
+    given-names: "Muhammad Bin"
+repository-code: "https://github.com/mbax0009/Pakistan-Energy-Simulator"
+url: "https://github.com/mbax0009/Pakistan-Energy-Simulator"
+abstract: "A local-first simulator for utility-scale solar PV, onshore wind and wave-energy resource modelling, project economics, sensitivity analysis and Monte Carlo risk assessment in Pakistan."
+keywords:
+  - renewable energy
+  - techno-economic analysis
+  - solar energy
+  - wind energy
+  - wave energy
+  - LCOE
+  - Monte Carlo
+  - Pakistan
+license: LicenseRef-Proprietary

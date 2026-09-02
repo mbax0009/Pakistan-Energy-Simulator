@@ -1,8 +1,19 @@
 {
   "name": "frontend",
   "version": "0.0.0",
+  "description": "React interface for the Pakistan Energy Simulator renewable-energy techno-economic analysis platform.",
   "private": true,
   "type": "module",
+  "keywords": [
+    "renewable-energy",
+    "solar-energy",
+    "wind-energy",
+    "wave-energy",
+    "energy-modeling",
+    "techno-economic-analysis",
+    "pakistan",
+    "react"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/prepare-sites-build.mjs",

@@ -1,12 +1,20 @@
-# Pakistan Renewable Energy Techno-Economic Simulator
+# Pakistan Energy Simulator — Solar, Wind & Wave Techno-Economic Analysis
 
-[![CI](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/GreenInvest-Pakistan/Pakistan-Energy-Simulator)](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/latest)
+[![CI](https://github.com/mbax0009/Pakistan-Energy-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/mbax0009/Pakistan-Energy-Simulator/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mbax0009/Pakistan-Energy-Simulator)](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/latest)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/latest)
 
-A local-first engineering screening environment for utility-scale solar PV, onshore
-wind, and research-grade wave energy in Pakistan. Enter coordinates directly, run a
-traceable physical model, and carry P90/P50/P10 resource evidence into lifecycle
-economics, comparison, sensitivity, break-even, and seeded Monte Carlo risk analysis.
+Pakistan Energy Simulator is a local-first renewable-energy modelling and
+techno-economic analysis platform for utility-scale solar PV, onshore wind and
+research-grade wave-energy projects in Pakistan. Enter coordinates directly, run a
+traceable physical model, and carry P90/P50/P10 resource evidence into LCOE, NPV, IRR,
+payback, comparison, sensitivity, break-even and seeded Monte Carlo risk analysis.
+
+**[Download for Windows](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/latest)** ·
+[Review methodology](docs/METHODOLOGY.md) ·
+[Inspect validation](docs/VALIDATION.md) ·
+[View data sources](docs/DATA_SOURCES.md)
 
 ![Pakistan Energy Simulator comparison](docs/images/comparison.png)
 
@@ -16,9 +24,9 @@ unlike technologies into a fabricated overall score.
 
 ## Download for Windows
 
-- [**Portable ZIP**](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip) — fastest repeated startup after extracting once.
-- [**One-click EXE**](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe) — simplest single-file option; the first launch is slightly slower while Windows unpacks its bundled runtime.
-- [**SHA-256 checksums**](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/SHA256SUMS.txt)
+- [**Portable ZIP**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip) — fastest repeated startup after extracting once.
+- [**One-click EXE**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe) — simplest single-file option; the first launch is slightly slower while Windows unpacks its bundled runtime.
+- [**SHA-256 checksums**](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/SHA256SUMS.txt)
 
 Both packages run on Windows 10/11 x64 without a separate Python or Node installation.
 
@@ -67,11 +75,11 @@ from an identified live feed with a dated bundled fallback and an SBP reference 
 ## Windows x64 standalone
 
 The release artifacts are available from the
-[v1.0.1 release](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/tag/v1.0.1):
+[v1.0.1 release](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/tag/v1.0.1):
 
-- [Portable Windows ZIP](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip)
-- [One-click Windows EXE](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe)
-- [SHA-256 checksums](https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator/releases/download/v1.0.1/SHA256SUMS.txt)
+- [Portable Windows ZIP](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.zip)
+- [One-click Windows EXE](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/Pakistan-Energy-Simulator-v1.0.1-win-x64.exe)
+- [SHA-256 checksums](https://github.com/mbax0009/Pakistan-Energy-Simulator/releases/download/v1.0.1/SHA256SUMS.txt)
 
 Both bundle the application, Python runtime, local API, scientific models, reference
 data, and compiled frontend. The portable ZIP starts fastest after extraction; the
@@ -80,10 +88,10 @@ requires Python, Node, npm, pip, or a compiler. A first analysis for a new coord
 requires internet access to retrieve its historical resource record; repeat requests
 use the local cache beside the executable.
 
-Build it from the repository-local D: environment:
+Build a Windows release locally:
 
 ```powershell
-Set-Location D:\Projects\Pakistan-Energy-Simulator
+Set-Location .\Pakistan-Energy-Simulator
 .\scripts\build_windows_release.ps1
 ```
 
@@ -94,8 +102,8 @@ every build cache and temporary file under D:. See [the release guide](docs/WIND
 ## Development setup on Windows
 
 ```powershell
-git clone https://github.com/GreenInvest-Pakistan/Pakistan-Energy-Simulator.git D:\Projects\Pakistan-Energy-Simulator
-Set-Location D:\Projects\Pakistan-Energy-Simulator
+git clone https://github.com/mbax0009/Pakistan-Energy-Simulator.git
+Set-Location .\Pakistan-Energy-Simulator
 py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e ".[dev,wave,package]"
@@ -144,6 +152,8 @@ docs/           Methods, sources, assumptions, limits, validation, release notes
 - [Limitations](docs/LIMITATIONS.md)
 - [Development](docs/DEVELOPMENT.md)
 - [Windows release](docs/WINDOWS_RELEASE.md)
+- [Security policy](SECURITY.md)
+- [How to cite the simulator](CITATION.cff)
 
 ## Licensing status
 
