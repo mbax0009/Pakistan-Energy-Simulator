@@ -47,7 +47,7 @@ Documentation = "https://github.com/mbax0009/Pakistan-Energy-Simulator/tree/main
 [project.optional-dependencies]
 wave = ["copernicusmarine>=2.4,<3"]
 dev = [
-  "httpx>=0.28,<1",
+  "httpx2>=2.13,<3",
   "pytest>=8,<10",
   "ruff>=0.11,<1",
 ]

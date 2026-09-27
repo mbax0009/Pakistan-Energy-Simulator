@@ -20,7 +20,7 @@ extracted ZIP is the preferred option for repeated use and fastest startup.
 Run from a repository-local D: virtual environment with the package extra installed:
 
 ```powershell
-Set-Location D:\Projects\Pakistan-Energy-Simulator
+# Open PowerShell in the repository checkout on D:, then run:
 .\.venv\Scripts\python.exe -m pip install -e ".[dev,package]"
 .\scripts\build_windows_release.ps1
 ```
@@ -37,7 +37,8 @@ release.
    itself.
 2. It binds only to `127.0.0.1:8765` by default.
 3. It serves the compiled React interface and typed `/api/v1` API from the same origin.
-4. It opens the local application in the user's default browser.
+4. It waits for the local server to respond, then opens the application in the user's
+   default browser.
 5. The process continues until the executable is stopped.
 
 Set `PAK_ENERGY_OPEN_BROWSER=0` for automated smoke tests, and set
@@ -56,9 +57,20 @@ port. Confirm:
 - warnings, source metadata, cost basis, and evidence export remain visible;
 - the process writes only inside the extracted `runtime-data` folder; and
 - the SHA-256 values in `release/SHA256SUMS.txt` match the downloaded ZIP and EXE;
-- the internal `FILE-MANIFEST.sha256` validates every extracted package file; and
+- the internal `FILE-MANIFEST.sha256` validates every extracted package file;
 - `Verify-Package.ps1` reports that every internal file matches that manifest;
 - the package contains `LICENSE` and `THIRD_PARTY_NOTICES.md`.
+
+## GitHub release automation
+
+Push a version tag only after the matching version is committed on `main`. For example,
+project version `1.1.1` must use tag `v1.1.1`. The workflow rejects a mismatched tag
+before installing or building dependencies, preventing README links from advertising
+assets that can never be produced.
+
+A successful tagged build publishes exactly three named assets: the portable ZIP, the
+one-click EXE, and `SHA256SUMS.txt`. GitHub also adds its own generic source archives;
+those are development snapshots, not standalone Windows packages.
 
 ## Distribution notes
 

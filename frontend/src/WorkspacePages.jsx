@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import ReactECharts from "echarts-for-react";
+import ReactECharts from "./EnergyChart.jsx";
 import {
   ArrowRight,
   BookOpenText,

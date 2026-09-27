@@ -4,16 +4,24 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          python-version: "3.13"
+          python-version-file: .python-version
           cache: pip
-      - uses: actions/setup-node@v4
+          cache-dependency-path: pyproject.toml
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm

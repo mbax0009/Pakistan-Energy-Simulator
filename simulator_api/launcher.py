@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 import webbrowser
 
 from pathlib import Path
-from threading import Timer
+from threading import Thread
+from urllib.error import URLError
+from urllib.request import urlopen
 
 import uvicorn
 
@@ -24,6 +27,22 @@ def _runtime_root() -> Path:
     return Path(__file__).resolve().parents[1] / ".runtime"
 
 
+def _open_browser_when_ready(url: str, timeout_seconds: float = 20.0) -> None:
+    """Open the UI only after the local server starts accepting requests."""
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        try:
+            with urlopen(url, timeout=0.5) as response:  # noqa: S310 - loopback URL only
+                if 200 <= response.status < 500:
+                    webbrowser.open(url)
+                    return
+        except (OSError, URLError):
+            time.sleep(0.1)
+
+    # Preserve the old behavior if startup diagnostics take longer than expected.
+    webbrowser.open(url)
+
+
 def main() -> None:
     _ensure_standard_streams()
     runtime_root = _runtime_root()
@@ -40,7 +59,13 @@ def main() -> None:
     url = f"http://{host}:{port}"
     open_browser = os.getenv("PAK_ENERGY_OPEN_BROWSER", "1").strip().lower()
     if open_browser not in {"0", "false", "no"}:
-        Timer(1.25, lambda: webbrowser.open(url)).start()
+        browser_thread = Thread(
+            target=_open_browser_when_ready,
+            args=(url,),
+            name="pak-energy-browser-launch",
+            daemon=True,
+        )
+        browser_thread.start()
 
     from simulator_api.main import app
 

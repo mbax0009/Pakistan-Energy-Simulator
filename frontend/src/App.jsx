@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import ReactECharts from "echarts-for-react";
+import ReactECharts from "./EnergyChart.jsx";
 import {
   ArrowSquareOut,
   ArrowsClockwise,
